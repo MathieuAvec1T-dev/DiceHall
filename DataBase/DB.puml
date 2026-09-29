@@ -1,0 +1,115 @@
+@startuml DB
+hide methods
+left to right direction
+
+entity User {
+    + id : int <<generated>>
+    --
+    * email : string(64) <<unique>>
+    * username : string(64)
+    password : string(64)
+    activecampaign_id : int <<FK>>
+}
+
+entity Token {
+    + value : string(256)
+    --
+    * user_id : int <<FK>>
+    * created_at : Datetime
+}
+
+entity Campaign {
+    + id : int <<generated>>
+    --
+    * name : string(64)
+    * ruleset_id : int <<FK>>
+}
+
+entity CampaignUser {
+    + campaign_id : int <<FK>>
+    + user_id : int <<FK>>
+    --
+    * role : Role
+}
+
+enum Role {
+    Owner
+    Admin
+    Player
+}
+
+entity Character {
+    + id : int <<generated>>
+    --
+    * name : string(64)
+    * user_id : int <<FK>>
+    * campaign_id : int <<FK>>
+}
+
+entity Item {
+    + id : int <<generated>>
+    --
+    * name : string(64)
+    * campaign_id : int <<FK>>
+    owner_id : int <<FK>>
+    * slot : string(32)
+    * description : string(256)
+}
+
+entity CharacterStat {
+    + owner_id : int <<FK>>
+    + stat_id : int <<FK>>
+    --
+    * value : int
+}
+
+entity Rule {
+    + id : int <<generated>>
+    --
+    * ruleset_id : int <<FK>>
+    name : string(64)
+    description : string(1024)
+}
+
+entity Ruleset {
+    + id : int <<generated>>
+    --
+    name : string(64)
+}
+
+entity Stat {
+    + id : int <<generated>>
+    --
+    * ruleset_id : int <<FK>>
+    * name : string(64)
+}
+
+entity Tag {
+    + id : int <<generated>>
+    --
+    * name : string(64)
+}
+
+entity RuleTag {
+    + rule_id : int <<FK>>
+    + tag_id : int <<FK>>
+}
+
+User ||--o{ Token
+Campaign ||--o{ Character
+Character }o--|| User
+Campaign ||--o{ CampaignUser
+User ||--o{ CampaignUser
+Item }o--o| Character
+CharacterStat }o--|| Character
+Rule }o--|| Ruleset
+Ruleset ||--o{ Campaign
+CampaignUser -- Role
+Campaign ||--o{ Item
+Ruleset ||--o{ Stat
+Stat ||--o{ CharacterStat
+Rule ||--o{ RuleTag
+RuleTag }o--|| Tag
+Campaign ||--o{ User
+
+@enduml
