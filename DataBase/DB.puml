@@ -22,7 +22,7 @@ entity Campaign {
     + id : int <<generated>>
     --
     * name : string(64)
-    * ruleset_id : int <<FK>>
+    * privacy : boolean
 }
 
 entity CampaignUser {
@@ -66,21 +66,14 @@ entity CharacterStat {
 entity Rule {
     + id : int <<generated>>
     --
-    * ruleset_id : int <<FK>>
     name : string(64)
     description : string(1024)
-}
-
-entity Ruleset {
-    + id : int <<generated>>
-    --
-    name : string(64)
 }
 
 entity Stat {
     + id : int <<generated>>
     --
-    * ruleset_id : int <<FK>>
+    * rule_id : int <<FK>>
     * name : string(64)
 }
 
@@ -95,6 +88,19 @@ entity RuleTag {
     + tag_id : int <<FK>>
 }
 
+entity CampaignRule {
+    + campaign_id : int <<FK>>
+    + rule_id : int <<FK>>
+}
+
+entity ItemStat {
+    + item_id : int <<FK>>
+    + stat_id : int <<FK>>
+    --
+    slot : string(32)
+    * value : int
+}
+
 User ||--o{ Token
 Campaign ||--o{ Character
 Character }o--|| User
@@ -102,14 +108,16 @@ Campaign ||--o{ CampaignUser
 User ||--o{ CampaignUser
 Item }o--o| Character
 CharacterStat }o--|| Character
-Rule }o--|| Ruleset
-Ruleset ||--o{ Campaign
+CampaignRule }o--|| Campaign
+Rule ||--o{ CampaignRule
 CampaignUser -- Role
 Campaign ||--o{ Item
-Ruleset ||--o{ Stat
+Rule ||--o{ Stat
 Stat ||--o{ CharacterStat
 Rule ||--o{ RuleTag
 RuleTag }o--|| Tag
 Campaign ||--o{ User
+Stat ||--o{ ItemStat
+ItemStat }o--|| Item
 
 @enduml

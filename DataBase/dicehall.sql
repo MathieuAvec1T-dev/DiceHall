@@ -4,7 +4,8 @@ START TRANSACTION;
 -- Base de données : `dicehall`
 --
 
-CREATE DATABASE IF NOT EXISTS `dicehall`;
+DROP DATABASE IF EXISTS `dicehall`;
+CREATE DATABASE `dicehall`;
 USE `dicehall`;
 
 --
@@ -15,7 +16,13 @@ USE `dicehall`;
 CREATE TABLE `campaign` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `name` varchar(64) NOT NULL,
-  `ruleset_id` int(11) NOT NULL
+  `privacy` boolean NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Structure de la table `campaign_rule`
+CREATE TABLE `campaign_rule` (
+  `campaign_id` int(11) NOT NULL,
+  `rule_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Structure de la table `campaign_user`
@@ -50,18 +57,19 @@ CREATE TABLE `item` (
   `description` varchar(256) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Structure de la table `item_stat`
+CREATE TABLE `item_stat` (
+  `item_id` int(11) NOT NULL,
+  `stat_id` int(11) NOT NULL,
+  `slot` varchar(32),
+  `value` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Structure de la table `rule`
 CREATE TABLE `rule` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `ruleset_id` int(11) NOT NULL,
   `name` varchar(64) DEFAULT NULL,
   `description` varchar(1024) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Structure de la table `ruleset`
-CREATE TABLE `ruleset` (
-  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `name` varchar(64) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Structure de la table `rule_tag`
@@ -74,7 +82,7 @@ CREATE TABLE `rule_tag` (
 CREATE TABLE `stat` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `name` varchar(64) NOT NULL,
-  `ruleset_id` int(11) NOT NULL
+  `rule_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Structure de la table `tag`
@@ -104,9 +112,10 @@ CREATE TABLE `user` (
 -- Index pour les tables
 --
 
--- Index pour la table `campaign`
-ALTER TABLE `campaign`
-  ADD KEY `campaign_ruleset_id` (`ruleset_id`);
+-- Index pour la table `campaign_rule`
+ALTER TABLE `campaign_rule`
+  ADD PRIMARY KEY (`campaign_id`,`rule_id`),
+  ADD KEY `campaign_rule_id` (`rule_id`);
 
 -- Index pour la table `campaign_user`
 ALTER TABLE `campaign_user`
@@ -128,9 +137,10 @@ ALTER TABLE `item`
   ADD KEY `item_campaign_id` (`campaign_id`),
   ADD KEY `item_owner_id` (`owner_id`);
 
--- Index pour la table `rule`
-ALTER TABLE `rule`
-  ADD KEY `rule_ruleset_id` (`ruleset_id`);
+-- Index pour la table `item_stat`
+ALTER TABLE `item_stat`
+  ADD PRIMARY KEY (`item_id`,`stat_id`),
+  ADD KEY `item_stat_id` (`stat_id`);
 
 -- Index pour la table `rule_tag`
 ALTER TABLE `rule_tag`
@@ -139,7 +149,7 @@ ALTER TABLE `rule_tag`
 
 -- Index pour la table `stat`
 ALTER TABLE `stat`
-  ADD KEY `stat_ruleset_id` (`ruleset_id`);
+  ADD KEY `stat_rule_id` (`rule_id`);
 
 -- Index pour la table `token`
 ALTER TABLE `token`
@@ -154,9 +164,10 @@ ALTER TABLE `user`
 -- Contraintes pour les tables
 --
 
--- Contraintes pour la table `campaign`
-ALTER TABLE `campaign`
-  ADD CONSTRAINT `campaign_ruleset_id` FOREIGN KEY (`ruleset_id`) REFERENCES `ruleset` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+-- Contraintes pour la table `campaign_rule`
+ALTER TABLE `campaign_rule`
+  ADD CONSTRAINT `campaign_rule_id` FOREIGN KEY (`rule_id`) REFERENCES `rule` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `rule_campaign_id` FOREIGN KEY (`campaign_id`) REFERENCES `campaign` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Contraintes pour la table `campaign_user`
 ALTER TABLE `campaign_user`
@@ -178,9 +189,10 @@ ALTER TABLE `item`
   ADD CONSTRAINT `item_campaign_id` FOREIGN KEY (`campaign_id`) REFERENCES `campaign` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `item_owner_id` FOREIGN KEY (`owner_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
--- Contraintes pour la table `rule`
-ALTER TABLE `rule`
-  ADD CONSTRAINT `rule_ruleset_id` FOREIGN KEY (`ruleset_id`) REFERENCES `ruleset` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+-- Contraintes pour la table `item_stat`
+ALTER TABLE `item_stat`
+  ADD CONSTRAINT `item_stat_id` FOREIGN KEY (`stat_id`) REFERENCES `stat` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `stat_item_id` FOREIGN KEY (`item_id`) REFERENCES `item` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Contraintes pour la table `rule_tag`
 ALTER TABLE `rule_tag`
@@ -189,7 +201,7 @@ ALTER TABLE `rule_tag`
 
 -- Contraintes pour la table `stat`
 ALTER TABLE `stat`
-  ADD CONSTRAINT `stat_ruleset_id` FOREIGN KEY (`ruleset_id`) REFERENCES `ruleset` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `stat_rule_id` FOREIGN KEY (`rule_id`) REFERENCES `rule` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Contraintes pour la table `token`
 ALTER TABLE `token`
