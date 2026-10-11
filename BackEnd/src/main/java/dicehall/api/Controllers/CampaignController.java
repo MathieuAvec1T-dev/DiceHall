@@ -1,0 +1,98 @@
+package dicehall.api.Controllers;
+
+import dicehall.api.DTOs.Campaign.CampaignDTO;
+import dicehall.api.Security.Exceptions.ErrorResponse;
+import dicehall.api.Services.Campaign.CampaignService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@SecurityScheme(name = "Authorization", type = SecuritySchemeType.HTTP, scheme = "bearer", bearerFormat = "JWT")
+@RequestMapping("/campaigns")
+public class CampaignController {
+    private final CampaignService campaignService;
+
+    public CampaignController(CampaignService campaignService) {
+        this.campaignService = campaignService;
+    }
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Campaign was found.", content = @Content(schema = @Schema(implementation = CampaignDTO.CampaignResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Campaign not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Campaign not found by ID example", value = "{\"status\": 404, \"message\": \"Campaign was not found with value: 26\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+            @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
+    })
+    @SecurityRequirement(name = "Authorization")
+    @Operation(summary = "Get a campaign by ID", description = "Returns a single campaign's public data. Need the \"Authorization\" token if campaign is private. Returns 404 if no campaign exists with that ID.")
+    @GetMapping("/id/{id}")
+    public CampaignDTO.CampaignResponse getById(@PathVariable Integer id, @RequestHeader(value = "Authorization", required = false) String authorization) {
+        return campaignService.findById(id, authorization);
+    }
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Campaign(s) were found.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = CampaignDTO.CampaignResponse.class)))),
+            @ApiResponse(responseCode = "404", description = "Campaign(s) not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Campaign not found by User ID example", value = "{\"status\": 404, \"message\": \"Campaign was not found with value: 26\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+            @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
+    })
+    @SecurityRequirement(name = "Authorization")
+    @Operation(summary = "Get a campaign by User ID", description = "Returns a List of campaigns's public data. Need the \"Authorization\" token if private campaigns are asked. Returns 404 if no campaign exists with these parameters .")
+    @GetMapping("/user/{id}")
+    public List<CampaignDTO.CampaignResponse> getByUserId(@PathVariable Integer id, @RequestParam(required = false) Boolean addPrivate, @RequestHeader(value = "Authorization", required = false) String authorization) {
+        return campaignService.findByUserId(id, addPrivate != null && addPrivate, authorization);
+    }
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Campaign(s) were found.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = CampaignDTO.CampaignResponse.class)))),
+            @ApiResponse(responseCode = "404", description = "Campaign(s) not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Campaign not found by Owner ID example", value = "{\"status\": 404, \"message\": \"Campaign was not found with value: 26\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+            @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
+    })
+    @SecurityRequirement(name = "Authorization")
+    @Operation(summary = "Get a campaign by Owner user ID", description = "Returns a List of campaigns's public data. Need the \"Authorization\" token if private campaigns are asked. Returns 404 if no campaign exists with these parameters .")
+    @GetMapping("/owner/{id}")
+    public List<CampaignDTO.CampaignResponse> getByOwnerId(@PathVariable Integer id, @RequestParam(required = false) Boolean addPrivate, @RequestHeader(value = "Authorization", required = false) String authorization) {
+        return campaignService.findByOwnerId(id, addPrivate != null && addPrivate, authorization);
+    }
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Campaign(s) were found.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = CampaignDTO.CampaignResponse.class)))),
+            @ApiResponse(responseCode = "404", description = "Campaign(s) not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Campaign not found by Name search example", value = "{\"status\": 404, \"message\": \"Campaign was not found with value: Bad Nam\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+            @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
+    })
+    @SecurityRequirement(name = "Authorization")
+    @Operation(summary = "Get a campaign by Name search", description = "Returns a List of campaigns's public data. Need the \"Authorization\" token if private campaigns are asked. Returns 404 if no campaign has a name containing the searched String.")
+    @GetMapping("/name/{searchParam}")
+    public List<CampaignDTO.CampaignResponse> getByCampaignName(@PathVariable String searchParam, @RequestParam(required = false) Pageable pageable, @RequestParam(required = false) Boolean addPrivate, @RequestHeader(value = "Authorization", required = false) String authorization) {
+        return campaignService.findIfNameContains(searchParam, pageable, addPrivate != null && addPrivate, authorization);
+    }
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Campaign was created.", content = @Content(schema = @Schema(implementation = CampaignDTO.CampaignResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Illegal argument.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Unknown Rule ID.", value = "{\"status\": 409, \"message\": \"One or more rule IDs do not exist.\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+            @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
+    })
+    @SecurityRequirement(name = "Authorization")
+    @Operation(summary = "Create a campaign", description = "Returns the campaigns's public data. The campaign users can be added by updating.")
+    @PostMapping
+    public CampaignDTO.CampaignResponse createCampaign(@Valid @RequestBody CampaignDTO.CampaignCreateRequest campaign, @RequestHeader("Authorization") String authorization) {
+        return campaignService.createCampaign(campaign, authorization);
+    }
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Campaign was updated.", content = @Content(schema = @Schema(implementation = CampaignDTO.CampaignResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Campaign not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Campaign not found by ID example", value = "{\"status\": 404, \"message\": \"Campaign was not found with value: 26\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+            @ApiResponse(responseCode = "409", description = "Illegal argument.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Unknown Rule ID.", value = "{\"status\": 409, \"message\": \"One or more rule IDs do not exist.\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+            @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
+    })
+    @SecurityRequirement(name = "Authorization")
+    @Operation(summary = "Update a campaign", description = "Returns the campaigns's public data.")
+    @PostMapping("/edit")
+    public CampaignDTO.CampaignResponse editCampaign(@Valid @RequestBody CampaignDTO.CampaignEditRequest campaign, @RequestHeader("Authorization") String authorization) {
+        return campaignService.editCampaign(campaign, authorization);
+    }
+}
