@@ -1,11 +1,11 @@
-package dicehall.api.Services;
+package dicehall.api.Services.User;
 
-import dicehall.api.DTOs.UserDTO;
-import dicehall.api.Entities.Token;
-import dicehall.api.Entities.User;
-import dicehall.api.Repositories.UserRepository;
+import dicehall.api.DTOs.User.UserDTO;
+import dicehall.api.Entities.User.Token;
+import dicehall.api.Entities.User.User;
+import dicehall.api.Repositories.User.TokenRepository;
+import dicehall.api.Repositories.User.UserRepository;
 import dicehall.api.Security.Exceptions.UserNotFoundException;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,25 +16,27 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
+    private final TokenRepository tokenRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, TokenService tokenService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, TokenService tokenService, TokenRepository tokenRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
+        this.tokenRepository = tokenRepository;
     }
 
     /**
-     * Find a {@link User} by its {@link Integer ID} and return a {@link dicehall.api.DTOs.UserDTO.UserResponse UserResponse}.
+     * Find a {@link User} by its {@link Integer ID} and return a {@link UserDTO.UserResponse UserResponse}.
      * @param id of the user.
-     * @return {@link dicehall.api.DTOs.UserDTO.UserResponse UserResponse} of the corresponding {@link User}
+     * @return {@link UserDTO.UserResponse UserResponse} of the corresponding {@link User}
      */
     public UserDTO.UserResponse findById(Integer id) {
         return new UserDTO.UserResponse(userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id)));
     }
     /**
-     * Find a {@link User} by its {@link String Username} and return a {@link List<dicehall.api.DTOs.UserDTO.UserResponse> List of UserResponse}.
+     * Find a {@link User} by its {@link String Username} and return a {@link List<UserDTO.UserResponse> List of UserResponse}.
      * @param username of the user.
-     * @return {@link List<dicehall.api.DTOs.UserDTO.UserResponse> List of UserResponse} of the corresponding {@link User Users}
+     * @return {@link List<UserDTO.UserResponse> List of UserResponse} of the corresponding {@link User Users}
      */
     public List<UserDTO.UserResponse> findByUsername(String username) {
         List<UserDTO.UserResponse> userResponses = userRepository.findAllByUsername(username).stream().map(UserDTO.UserResponse::new).toList();
@@ -44,8 +46,8 @@ public class UserService {
 
     /**
      * Create a {@link User} with the passed information through {@link UserDTO.UserCreateRequest UserCreateRequest}.
-     * @param request {@link dicehall.api.DTOs.UserDTO.UserCreateRequest UserCreateRequest} containing {@code username, email, password}.
-     * @return {@link dicehall.api.DTOs.UserDTO.UserAuthResponse UserAuthResponse} of the created user containing the token.
+     * @param request {@link UserDTO.UserCreateRequest UserCreateRequest} containing {@code username, email, password}.
+     * @return {@link UserDTO.UserAuthResponse UserAuthResponse} of the created user containing the token.
      */
     public UserDTO.UserAuthResponse createUser(UserDTO.UserCreateRequest request){
         if(userRepository.existsByEmail(request.email())) throw new IllegalStateException("Email already taken.");
@@ -58,9 +60,19 @@ public class UserService {
     }
 
     /**
+     * Disconnect a {@link User} by removing it's related {@link Token}.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return A validation message.
+     */
+    public String disconnect(String authorization) {
+        tokenRepository.removeTokenByUser(validate(authorization));
+        return "Disconnected successfully";
+    }
+
+    /**
      * Authenticate a {@link User} with the passed information through {@link UserDTO.UserAuthRequest UserAuthRequest}.
-     * @param request {@link dicehall.api.DTOs.UserDTO.UserAuthRequest UserAuthRequest} containing {@code email, password}.
-     * @return {@link dicehall.api.DTOs.UserDTO.UserAuthResponse UserAuthResponse} of the authenticated user containing the token.
+     * @param request {@link UserDTO.UserAuthRequest UserAuthRequest} containing {@code email, password}.
+     * @return {@link UserDTO.UserAuthResponse UserAuthResponse} of the authenticated user containing the token.
      */
     public UserDTO.UserAuthResponse authUser(UserDTO.UserAuthRequest request){
         User user = userRepository.findByEmail(request.email()).orElseThrow(() -> new UserNotFoundException(request.email()));
@@ -71,27 +83,31 @@ public class UserService {
     /**
      * Authenticate a {@link User} with the passed {@link Token}.
      * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
-     * @param id of the {@link User}.
-     * @return {@link dicehall.api.DTOs.UserDTO.UserResponse UserResponse} of the authenticated user.
+     * @return {@link UserDTO.UserResponse UserResponse} of the authenticated user.
      */
-    public UserDTO.UserResponse validate(String authorization, Integer id) {
+    public UserDTO.UserResponse authUser(String authorization) {
+        return new UserDTO.UserResponse(validate(authorization));
+    }
+
+    /**
+     * Validate if authorization credentials sent by user are valid.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return {@link User} corresponding.
+     */
+    public User validate(String authorization) {
         authorization = authorization.replace("Bearer ", "");
-        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
-        if(user.getToken() == null || !tokenService.isTokenValid(id,authorization)) throw new BadCredentialsException("Invalid token: " + authorization);
-        return new UserDTO.UserResponse(userRepository.save(user));
+        return tokenService.findUserByToken(authorization);
     }
 
     /**
      * Update a {@link User} with the passed information through {@link UserDTO.UserEditRequest UserEditRequest}.
-     * User should be connected and the same as the passed ID.
-     * @param request {@link dicehall.api.DTOs.UserDTO.UserEditRequest UserEditRequest} containing {@code id, username}.
+     * User should be connected.
+     * @param request {@link UserDTO.UserEditRequest UserEditRequest} containing {@code id, username}.
      * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
-     * @return {@link dicehall.api.DTOs.UserDTO.UserResponse UserResponse} of the updated user.
+     * @return {@link UserDTO.UserResponse UserResponse} of the updated user.
      */
     public UserDTO.UserResponse updateUser(UserDTO.UserEditRequest request, String authorization){
-        authorization = authorization.replace("Bearer ", "");
-        User user = userRepository.findById(request.id()).orElseThrow(() -> new UserNotFoundException(request.id()));
-        if(!tokenService.isTokenValid(user.getId(), authorization)) throw new BadCredentialsException("Invalid token: " + authorization);
+        User user = validate(authorization);
         user.setUsername(request.username());
         return new UserDTO.UserResponse(userRepository.save(user));
     }

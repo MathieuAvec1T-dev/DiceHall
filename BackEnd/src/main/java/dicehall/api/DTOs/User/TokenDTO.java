@@ -1,6 +1,6 @@
-package dicehall.api.DTOs;
+package dicehall.api.DTOs.User;
 
-import dicehall.api.Entities.Token;
+import dicehall.api.Entities.User.Token;
 
 import java.time.LocalDateTime;
 

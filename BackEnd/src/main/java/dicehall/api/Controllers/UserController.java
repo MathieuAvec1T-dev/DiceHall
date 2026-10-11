@@ -1,21 +1,25 @@
 package dicehall.api.Controllers;
 
-import dicehall.api.DTOs.UserDTO;
+import dicehall.api.DTOs.User.UserDTO;
 import dicehall.api.Security.Exceptions.ErrorResponse;
-import dicehall.api.Services.UserService;
+import dicehall.api.Services.User.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
+@SecurityScheme(name = "Authorization", type = SecuritySchemeType.HTTP, scheme = "bearer", bearerFormat = "JWT")
 @RequestMapping("/users")
 public class UserController {
     private final UserService userService;
@@ -55,13 +59,36 @@ public class UserController {
 
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "User was authenticated.", content = @Content(schema = @Schema(implementation = UserDTO.UserAuthResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
+    })
+    @SecurityRequirement(name = "Authorization")
+    @Operation(summary = "Disconnect a user.", description = "Returns a Validation message if no Error occurred.")
+    @PostMapping("/auth/disconnect")
+    public String disconnect(@RequestHeader("Authorization") String authorization) {
+        return userService.disconnect(authorization);
+    }
+
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User was authenticated.", content = @Content(schema = @Schema(implementation = UserDTO.UserAuthResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
+    })
+    @SecurityRequirement(name = "Authorization")
+    @Operation(summary = "Authenticate as a user.", description = "Returns the user's public data including it's token, excluding the password. Returns 404 if no user exists with that Email.")
+    @PostMapping("/auth/validate")
+    public UserDTO.UserResponse auth(@RequestHeader("Authorization") String authorization) {
+        return userService.authUser(authorization);
+    }
+
+    @Deprecated(forRemoval = true)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User was authenticated.", content = @Content(schema = @Schema(implementation = UserDTO.UserAuthResponse.class))),
             @ApiResponse(responseCode = "404", description = "User not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "User not found by Email example", value = "{\"status\": 404, \"message\": \"User not found: bademail@gmail.com\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
             @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
     })
-    @Operation(summary = "Authenticate as a user.", description = "Returns the user's public data including it's token, excluding the password. Returns 404 if no user exists with that Email.")
+    @Operation(summary = "Authenticate as a user.", description = "Use POST /validate instead.")
     @PostMapping("/auth/validate/{id}")
     public UserDTO.UserResponse auth(@RequestHeader("Authorization") String authorization, @PathVariable Integer id) {
-        return userService.validate(authorization, id);
+        return userService.authUser(authorization);
     }
 
     @ApiResponses({
@@ -76,9 +103,9 @@ public class UserController {
 
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Username of User was updated.", content = @Content(schema = @Schema(implementation = UserDTO.UserResponse.class))),
-            @ApiResponse(responseCode = "404", description = "User not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "User not found by ID example", value = "{\"status\": 404, \"message\": \"User not found: 42\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
             @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
     })
+    @SecurityRequirement(name = "Authorization")
     @Operation(summary = "Update a user.", description = "Returns the user's new public data, excluding the password and token. Returns 404 if no user exists with that ID. Returns 401 if the token is invalid.")
     @PostMapping("/edit")
     public UserDTO.UserResponse edit(@Valid @RequestBody UserDTO.UserEditRequest user, @RequestHeader("Authorization") String authorization) {

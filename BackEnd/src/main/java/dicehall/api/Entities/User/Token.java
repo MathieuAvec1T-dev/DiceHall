@@ -1,4 +1,4 @@
-package dicehall.api.Entities;
+package dicehall.api.Entities.User;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "Token")
+@Table(name = "token")
 public class Token {
     @Id
     @Column(length = 256)

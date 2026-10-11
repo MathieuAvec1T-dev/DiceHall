@@ -1,4 +1,4 @@
-package dicehall.api.Entities;
+package dicehall.api.Entities.User;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -13,7 +13,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "User")
+@Table(name = "user")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

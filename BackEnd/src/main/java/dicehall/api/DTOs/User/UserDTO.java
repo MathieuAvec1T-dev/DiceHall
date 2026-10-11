@@ -1,6 +1,6 @@
-package dicehall.api.DTOs;
+package dicehall.api.DTOs.User;
 
-import dicehall.api.Entities.User;
+import dicehall.api.Entities.User.User;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -19,6 +19,6 @@ public class UserDTO {
 
 
     public record UserCreateRequest(@NotBlank @Size(min = 3, max = 64) String username, @NotBlank @Size(min = 3, max = 64) @Email String email, @NotBlank @Size(min = 8, max = 64) String password) {}
-    public record UserEditRequest(Integer id, @NotBlank @Size(min = 3, max = 64) String username) {}
+    public record UserEditRequest(@NotBlank @Size(min = 3, max = 64) String username) {}
     public record UserAuthRequest(@NotBlank @Size(min = 3, max = 64) @Email String email, @NotBlank @Size(min = 8, max = 64) String password) {}
 }
