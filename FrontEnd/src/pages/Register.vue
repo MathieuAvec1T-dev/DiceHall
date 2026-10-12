@@ -17,13 +17,13 @@ async function handleSubmit() {
   errors.value = {};
 
   if (!form.email) {
-    errors.value.email = "L'email est requis"
+    errors.value.email = "L'email est requis";
   }
   if (!form.username) {
-    errors.value.username = "Le nom d'utilisateur est requis"
+    errors.value.username = "Le nom d'utilisateur est requis";
   }
   if (!form.password) {
-    errors.value.password = "Le mot de passe est requis"
+    errors.value.password = "Le mot de passe est requis";
   }
 
   if (Object.keys(errors.value).length === 0) {
@@ -38,13 +38,17 @@ async function handleSubmit() {
           username: form.username,
           password: form.password
         })
-      })
-      .then(res => res.json())
-      .then(data => {
-        userStore.setToken(data.token.value);
-        delete data.token;
-        userStore.setUser(data);
-        router.push("/");
+      }).then(res => {
+        res.json().then(data => {
+          if (res.ok) {
+            userStore.setToken(data.token.value);
+            delete data.token;
+            userStore.user = data;
+            router.push("/");
+          } else {
+            errors.value.global = data.message;
+          }
+        });  
       });
     } catch (error) {
       errors.value.global = "Une erreur est survenu";
@@ -58,6 +62,7 @@ async function handleSubmit() {
   <div>
     <h1>Inscription</h1>
     <form @submit.prevent="handleSubmit">
+      <span v-if="errors.global">{{ errors.global }}</span>
       <div>
         <label for="email">Mail</label>
         <span v-if="errors.email" class="error">{{ errors.email }}</span>

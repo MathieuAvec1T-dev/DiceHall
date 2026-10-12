@@ -1,5 +1,6 @@
 import Homepage from "@/pages/Homepage.vue";
 import Login from "@/pages/Login.vue";
+import Logout from "@/pages/Logout.vue";
 import Register from "@/pages/Register.vue";
 import { createRouter, createWebHistory } from "vue-router";
 
@@ -17,6 +18,10 @@ const router = createRouter({
     path: "/login",
     name: "login",
     component: Login
+  }, {
+    path: "/logout",
+    name: "logout",
+    component: Logout
   }],
 });
 

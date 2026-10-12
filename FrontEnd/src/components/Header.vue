@@ -8,7 +8,7 @@ const userStore = useUserStore();
 <template>
   <header>
     <div>DICE HALL</div>
-    <nav v-if="userStore.token">
+    <nav v-if="userStore.user.username">
       <RouterLink to="/campaign">Campagnes</RouterLink>
       <RouterLink to="/character">Personnages</RouterLink>
       <RouterLink to="/me">Profil : {{ userStore.user.username }}</RouterLink>
