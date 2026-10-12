@@ -17,10 +17,10 @@ async function handleSubmit() {
   errors.value = {};
 
   if (!form.email) {
-    errors.value.email = "L'email est requis"
+    errors.value.email = "L'email est requis";
   }
   if (!form.password) {
-    errors.value.password = "Le mot de passe est requis"
+    errors.value.password = "Le mot de passe est requis";
   }
 
   if (Object.keys(errors.value).length === 0) {
@@ -34,16 +34,19 @@ async function handleSubmit() {
           email: form.email,
           password: form.password
         })
-      })
-      .then(res => res.json())
-      .then(data => {
-        userStore.setToken(data.token.value);
-        delete data.token;
-        userStore.setUser(data);
-        router.push("/");
+      }).then(res => {
+        res.json().then(data => {
+          if (res.ok) {
+            userStore.setToken(data.token.value);
+            delete data.token;
+            userStore.user = data;
+            router.push("/");
+          } else {
+            errors.value.global = data.message;
+          }
+        });  
       });
     } catch (error) {
-      console.log(error);
       errors.value.global = "Une erreur est survenu";
     }
   }
