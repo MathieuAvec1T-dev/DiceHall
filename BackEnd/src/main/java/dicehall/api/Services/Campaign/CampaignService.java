@@ -46,7 +46,6 @@ public class CampaignService {
         } else {
             campaigns = campaignRepository.findByNameContainingIgnoreCaseAndPrivacyFalse(searchParam, pageable).getContent();
         }
-        if(campaigns.isEmpty()) throw new ResourceNotFoundException("Campaign", searchParam);
         return campaigns.stream().map(CampaignDTO.CampaignResponse::new).toList();
     }
 
@@ -69,7 +68,6 @@ public class CampaignService {
         } else {
             campaigns.removeIf(campaign -> campaign.getPrivacy() || campaign.getCampaignUsers().stream().noneMatch(campaignUser -> Objects.equals(campaignUser.getId().getUser_id(), id)));
         }
-        if(campaigns.isEmpty()) throw new ResourceNotFoundException("Campaign", id.toString());
         return campaigns.stream().map(CampaignDTO.CampaignResponse::new).toList();
     }
 
@@ -82,7 +80,6 @@ public class CampaignService {
         } else {
             campaigns.removeIf(Campaign::getPrivacy);
         }
-        if(campaigns.isEmpty()) throw new ResourceNotFoundException("Campaign", id.toString());
         return campaigns.stream().map(CampaignDTO.CampaignResponse::new).toList();
     }
 

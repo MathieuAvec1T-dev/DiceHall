@@ -41,7 +41,6 @@ public class CampaignController {
     }
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Campaign(s) were found.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = CampaignDTO.CampaignResponse.class)))),
-            @ApiResponse(responseCode = "404", description = "Campaign(s) not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Campaign not found by User ID example", value = "{\"status\": 404, \"message\": \"Campaign was not found with value: 26\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
             @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
     })
     @SecurityRequirement(name = "Authorization")
@@ -52,7 +51,6 @@ public class CampaignController {
     }
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Campaign(s) were found.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = CampaignDTO.CampaignResponse.class)))),
-            @ApiResponse(responseCode = "404", description = "Campaign(s) not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Campaign not found by Owner ID example", value = "{\"status\": 404, \"message\": \"Campaign was not found with value: 26\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
             @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
     })
     @SecurityRequirement(name = "Authorization")
@@ -63,7 +61,6 @@ public class CampaignController {
     }
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Campaign(s) were found.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = CampaignDTO.CampaignResponse.class)))),
-            @ApiResponse(responseCode = "404", description = "Campaign(s) not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Campaign not found by Name search example", value = "{\"status\": 404, \"message\": \"Campaign was not found with value: Bad Nam\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
             @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
     })
     @SecurityRequirement(name = "Authorization")
