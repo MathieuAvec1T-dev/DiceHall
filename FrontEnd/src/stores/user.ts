@@ -5,24 +5,25 @@ export const useUserStore = defineStore("user", () => {
   const token = ref(localStorage.getItem("token") ?? null);
   const user = ref({});
 
+  let ready = Promise.resolve();
+
   if (token.value) {
-    fetch(`${window.location.protocol}//${window.location.hostname}:8080/users/auth/validate`, {
+    ready = fetch(`${window.location.protocol}//${window.location.hostname}:8080/users/auth/validate`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token.value}`,
       }
-    }).then(res => {
-      res.json().then(data => {
-        if (res.ok) {
-          delete data.token;
-          user.value = data;
-        }
-      });  
+    }).then(async res => {
+      const data = await res.json();
+      if (res.ok) {
+        delete data.token;
+        user.value = data;
+      } 
     });
   }
 
   function setToken(tokenValue: string|null) {
-    token.value = token;
+    token.value = tokenValue;
     if (tokenValue) {
       localStorage.setItem("token", tokenValue);
     } else {
@@ -31,6 +32,7 @@ export const useUserStore = defineStore("user", () => {
   }
 
   return {
+    ready,
     user,
     token,
     setToken

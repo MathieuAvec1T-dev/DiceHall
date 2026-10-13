@@ -1,3 +1,5 @@
+import CampaignNew from "@/pages/campaign/CampaignNew.vue";
+import CampaignsList from "@/pages/campaign/CampaignsList.vue";
 import Homepage from "@/pages/Homepage.vue";
 import Login from "@/pages/Login.vue";
 import Logout from "@/pages/Logout.vue";
@@ -22,7 +24,15 @@ const router = createRouter({
     path: "/logout",
     name: "logout",
     component: Logout
-  }],
+  }, {
+    path: "/campaigns",
+    name: "campaignsList",
+    component : CampaignsList
+  }, {
+    path: "/campaign/new",
+    name: "campaignNew",
+    component: CampaignNew
+  }]
 });
 
 export default router;

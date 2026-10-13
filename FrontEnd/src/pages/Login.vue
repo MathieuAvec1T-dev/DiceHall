@@ -34,17 +34,16 @@ async function handleSubmit() {
           email: form.email,
           password: form.password
         })
-      }).then(res => {
-        res.json().then(data => {
-          if (res.ok) {
-            userStore.setToken(data.token.value);
-            delete data.token;
-            userStore.user = data;
-            router.push("/");
-          } else {
-            errors.value.global = data.message;
-          }
-        });  
+      }).then(async res => {
+        const data = await res.json();
+        if (res.ok) {
+          userStore.setToken(data.token.value);
+          delete data.token;
+          userStore.user = data;
+          router.push("/");
+        } else {
+          errors.value.global = data.message;
+        }
       });
     } catch (error) {
       errors.value.global = "Une erreur est survenu";

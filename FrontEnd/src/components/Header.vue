@@ -9,9 +9,9 @@ const userStore = useUserStore();
   <header>
     <div>DICE HALL</div>
     <nav v-if="userStore.user.username">
-      <RouterLink to="/campaign">Campagnes</RouterLink>
-      <RouterLink to="/character">Personnages</RouterLink>
-      <RouterLink to="/me">Profil : {{ userStore.user.username }}</RouterLink>
+      <RouterLink to="/campaigns">Campagnes</RouterLink>
+      <RouterLink to="/characters">Personnages</RouterLink>
+      <RouterLink to="/profile">Profil : {{ userStore.user.username }}</RouterLink>
     </nav>
     <nav v-else>
       <RouterLink to="/register">Inscription</RouterLink>
