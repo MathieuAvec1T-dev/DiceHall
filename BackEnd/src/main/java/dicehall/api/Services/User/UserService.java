@@ -6,6 +6,7 @@ import dicehall.api.Entities.User.User;
 import dicehall.api.Repositories.User.TokenRepository;
 import dicehall.api.Repositories.User.UserRepository;
 import dicehall.api.Security.Exceptions.UserNotFoundException;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -36,12 +37,20 @@ public class UserService {
     /**
      * Find a {@link User} by its {@link String Username} and return a {@link List<UserDTO.UserResponse> List of UserResponse}.
      * @param username of the user.
+     * @param pageable {@link Pageable} information to send to request.
      * @return {@link List<UserDTO.UserResponse> List of UserResponse} of the corresponding {@link User Users}
      */
-    public List<UserDTO.UserResponse> findByUsername(String username) {
-        List<UserDTO.UserResponse> userResponses = userRepository.findAllByUsername(username).stream().map(UserDTO.UserResponse::new).toList();
-        if(userResponses.isEmpty()) throw new UserNotFoundException(username);
-        return userResponses;
+    public List<UserDTO.UserResponse> findByUsername(String username, Pageable pageable) {
+        return userRepository.findAllByUsername(username, pageable).stream().map(UserDTO.UserResponse::new).toList();
+    }
+    /**
+     * Find a {@link User} by its {@link String Email} and return a {@link List<UserDTO.UserResponse> List of UserResponse}.
+     * @param email of the user.
+     * @param pageable {@link Pageable} information to send to request.
+     * @return {@link List<UserDTO.UserResponse> List of UserResponse} of the corresponding {@link User Users}
+     */
+    public List<UserDTO.UserResponse> findByEmail(String email, Pageable pageable) {
+        return userRepository.findByEmailContainingIgnoreCase(email, pageable).stream().map(UserDTO.UserResponse::new).toList();
     }
 
     /**

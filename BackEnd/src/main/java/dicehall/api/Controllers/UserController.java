@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,12 +40,19 @@ public class UserController {
     }
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "User(s) were found.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserDTO.UserResponse.class)))),
-            @ApiResponse(responseCode = "404", description = "User(s) not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "User not found by Username example", value = "{\"status\": 404, \"message\": \"User not found: badUsername\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
     })
-    @Operation(summary = "Get users by Username", description = "Returns a list of user's public data, excluding the password and token. Returns 404 if no user exists with that username.")
+    @Operation(summary = "Get users by Username", description = "Returns a list of user's public data, excluding the password and token.")
     @GetMapping("/username/{username}")
-    public List<UserDTO.UserResponse> getByUsername(@PathVariable String username) {
-        return userService.findByUsername(username);
+    public List<UserDTO.UserResponse> getByUsername(@PathVariable String username, @RequestParam(required = false) Pageable pageable) {
+        return userService.findByUsername(username, pageable);
+    }
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User(s) were found.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserDTO.UserResponse.class)))),
+    })
+    @Operation(summary = "Get users by Email", description = "Returns a list of user's public data, excluding the password and token.")
+    @GetMapping("/email/{email}")
+    public List<UserDTO.UserResponse> getByEmail(@PathVariable String email, @RequestParam(required = false) Pageable pageable) {
+        return userService.findByEmail(email, pageable);
     }
 
     @ApiResponses({
@@ -58,7 +66,7 @@ public class UserController {
     }
 
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "User was authenticated.", content = @Content(schema = @Schema(implementation = UserDTO.UserAuthResponse.class))),
+            @ApiResponse(responseCode = "200", description = "User was disconnected.", content = @Content(schema = @Schema(implementation = UserDTO.UserAuthResponse.class))),
             @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
     })
     @SecurityRequirement(name = "Authorization")
@@ -76,18 +84,6 @@ public class UserController {
     @Operation(summary = "Authenticate as a user.", description = "Returns the user's public data including it's token, excluding the password. Returns 404 if no user exists with that Email.")
     @PostMapping("/auth/validate")
     public UserDTO.UserResponse auth(@RequestHeader("Authorization") String authorization) {
-        return userService.authUser(authorization);
-    }
-
-    @Deprecated(forRemoval = true)
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "User was authenticated.", content = @Content(schema = @Schema(implementation = UserDTO.UserAuthResponse.class))),
-            @ApiResponse(responseCode = "404", description = "User not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "User not found by Email example", value = "{\"status\": 404, \"message\": \"User not found: bademail@gmail.com\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
-            @ApiResponse(responseCode = "401", description = "Wrong Credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
-    })
-    @Operation(summary = "Authenticate as a user.", description = "Use POST /validate instead.")
-    @PostMapping("/auth/validate/{id}")
-    public UserDTO.UserResponse auth(@RequestHeader("Authorization") String authorization, @PathVariable Integer id) {
         return userService.authUser(authorization);
     }
 
