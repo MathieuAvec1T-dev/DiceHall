@@ -19,6 +19,6 @@ public class UserDTO {
 
 
     public record UserCreateRequest(@NotBlank @Size(min = 3, max = 64) String username, @NotBlank @Size(min = 3, max = 64) @Email String email, @NotBlank @Size(min = 8, max = 64) String password) {}
-    public record UserEditRequest(@NotBlank @Size(min = 3, max = 64) String username) {}
+    public record UserEditRequest(@Nullable @Size(min = 3, max = 64) String username, @Size(min = 3, max = 64) @Email @Nullable String email, @Size(min = 8, max = 64) @Nullable String password) {}
     public record UserAuthRequest(@NotBlank @Size(min = 3, max = 64) @Email String email, @NotBlank @Size(min = 8, max = 64) String password) {}
 }

@@ -117,7 +117,9 @@ public class UserService {
      */
     public UserDTO.UserResponse updateUser(UserDTO.UserEditRequest request, String authorization){
         User user = validate(authorization);
-        user.setUsername(request.username());
+        if(request.username() != null && !request.username().isEmpty()) user.setUsername(request.username());
+        if(request.email() != null && !request.email().isEmpty()) user.setEmail(request.email());
+        if(request.password() != null && !request.password().isEmpty()) user.setPassword(passwordEncoder.encode(request.password()));
         return new UserDTO.UserResponse(userRepository.save(user));
     }
 }
