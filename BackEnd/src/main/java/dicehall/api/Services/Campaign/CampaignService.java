@@ -7,6 +7,7 @@ import dicehall.api.Entities.Campaign.CampaignUser;
 import dicehall.api.Entities.Campaign.CampaignUserId;
 import dicehall.api.Entities.Campaign.Role;
 import dicehall.api.Entities.Rule.Rule;
+import dicehall.api.Entities.User.Token;
 import dicehall.api.Entities.User.User;
 import dicehall.api.Repositories.Campaign.CampaignRepository;
 import dicehall.api.Repositories.Campaign.CampaignUserRepository;
@@ -37,6 +38,14 @@ public class CampaignService {
         this.userRepository = userRepository;
     }
 
+    /**
+     * Find {@link Campaign Campaigns} where the name contains the search value.
+     * @param searchParam The String you want to search for in the campaigns name.
+     * @param pageable The {@link Pageable} parameters for pagination.
+     * @param privacy {@link Boolean} if you want to add private {@link Campaign Campaigns} or not.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return a {@link List<CampaignDTO.CampaignResponse> List of Campaigns} found.
+     */
     public List<CampaignDTO.CampaignResponse> findIfNameContains(String searchParam, Pageable pageable, Boolean privacy, String authorization) {
         List<Campaign> campaigns;
         if(privacy){
@@ -49,6 +58,12 @@ public class CampaignService {
         return campaigns.stream().map(CampaignDTO.CampaignResponse::new).toList();
     }
 
+    /**
+     * Find a {@link Campaign Campaign} by ID.
+     * @param id of the {@link Campaign}.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return the found {@link CampaignDTO.CampaignResponse Campaign}.
+     */
     public CampaignDTO.CampaignResponse findById(Integer id , String authorization) {
         Campaign campaign = campaignRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Campaign", id.toString()));
         if(campaign.getPrivacy()) {
@@ -59,6 +74,13 @@ public class CampaignService {
         return new CampaignDTO.CampaignResponse(campaign);
     }
 
+    /**
+     * Find {@link Campaign Campaigns} that a {@link User} own.
+     * @param id of the {@link User Owner}.
+     * @param privacy {@link Boolean} if you want to add private {@link Campaign Campaigns} or not.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return a {@link List<CampaignDTO.CampaignResponse> List of Campaigns} found.
+     */
     public List<CampaignDTO.CampaignResponse> findByOwnerId(Integer id, boolean privacy, String authorization) {
         List<Campaign> campaigns = campaignRepository.findByUserIdAndRole(id, Role.Owner);
         if(privacy){
@@ -71,6 +93,13 @@ public class CampaignService {
         return campaigns.stream().map(CampaignDTO.CampaignResponse::new).toList();
     }
 
+    /**
+     * Find {@link Campaign Campaigns} that a {@link User} is part of.
+     * @param id of the {@link User}.
+     * @param privacy {@link Boolean} if you want to add private {@link Campaign Campaigns} or not.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return a {@link List<CampaignDTO.CampaignResponse> List of Campaigns} found.
+     */
     public List<CampaignDTO.CampaignResponse> findByUserId(Integer id, boolean privacy, String authorization) {
         List<Campaign> campaigns = campaignRepository.findByUserId(id);
         if(privacy){
@@ -83,6 +112,12 @@ public class CampaignService {
         return campaigns.stream().map(CampaignDTO.CampaignResponse::new).toList();
     }
 
+    /**
+     * Create a {@link Campaign}.
+     * @param campaignRequest {@link CampaignDTO.CampaignCreateRequest} with campaign data.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return The {@link CampaignDTO.CampaignResponse Campaign} that was created.
+     */
     public CampaignDTO.CampaignResponse createCampaign(CampaignDTO.CampaignCreateRequest campaignRequest, String authorization) {
         User user = userService.validate(authorization);
         Campaign campaign = new Campaign();
@@ -99,6 +134,10 @@ public class CampaignService {
             campaignUsers.add(new CampaignUser(new CampaignUserId(campaign.getId(), user.getId()), campaign, user, Role.Owner));
             campaign.setCampaignUsers(campaignUsers);
             campaign = campaignRepository.save(campaign);
+            if(user.getActiveCampaign() == null) {
+                user.setActiveCampaign(campaign);
+                userRepository.save(user);
+            }
         } catch(Exception e){
             campaignRepository.deleteById(campaign.getId());
             throw e;
@@ -106,6 +145,14 @@ public class CampaignService {
         return new CampaignDTO.CampaignResponse(campaign);
     }
 
+    /**
+     * Edit the campaign.
+     * Only an Owner can edit admins and players.
+     * An Admin can only edit players.
+     * @param campaignRequest {@link CampaignUserDTO.CampaignUserEditRequest} with new data.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return The {@link CampaignDTO.CampaignResponse Campaign} that was edited.
+     */
     public CampaignDTO.CampaignResponse editCampaign(CampaignDTO.CampaignEditRequest campaignRequest, String authorization) {
         User user = userService.validate(authorization);
         Campaign campaign = campaignRepository.findById(campaignRequest.id()).orElseThrow(() -> new ResourceNotFoundException("Campaign", campaignRequest.id().toString()));
@@ -141,6 +188,35 @@ public class CampaignService {
         }
     }
 
+    /**
+     * Add a {@link User} to a {@link Campaign}.
+     * @param campaignID ID of the {@link Campaign}.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return The {@link CampaignDTO.CampaignResponse Campaign} that was joined.
+     */
+    public CampaignDTO.CampaignResponse joinCampaign(Integer campaignID, String authorization) {
+        User user = userService.validate(authorization);
+        Campaign campaign = campaignRepository.findById(campaignID).orElseThrow(()-> new ResourceNotFoundException("Campaign", authorization));
+        if(campaign.getCampaignUsers().stream().anyMatch(campaignUser -> Objects.equals(campaignUser.getId().getUser_id(), user.getId()))) throw new IllegalStateException("Already part of campaign.");
+        Set<CampaignUser> campaignUsers = campaign.getCampaignUsers();
+        CampaignUser campaignUser = new CampaignUser(new CampaignUserId(campaignID, user.getId()), campaign, user, Role.Player);
+        campaignUser = campaignUserRepository.save(campaignUser);
+        campaignUsers.add(campaignUser);
+        campaign.setCampaignUsers(campaignUsers);
+        campaignRepository.save(campaign);
+        if(user.getActiveCampaign() == null) {
+            user.setActiveCampaign(campaign);
+            userRepository.save(user);
+        }
+        return new CampaignDTO.CampaignResponse(campaign);
+    }
+
+    /**
+     * Link a Campaign and a User.
+     * @param campaign {@link Campaign} to link.
+     * @param savedCampaignUsers {@link Set<CampaignUser> Set of CampaignUsers} that is already part of the {@link Campaign}.
+     * @param campaignUserRequest {@link CampaignUserDTO.CampaignUserEditRequest} with new {@link CampaignUser} data.
+     */
     private void addCampaignUser(Campaign campaign, Set<CampaignUser> savedCampaignUsers, CampaignUserDTO.CampaignUserEditRequest campaignUserRequest) {
         CampaignUser newCampaignUser = new CampaignUser();
         newCampaignUser.setId(new CampaignUserId(campaign.getId(), campaignUserRequest.userID()));
