@@ -92,10 +92,10 @@ public class UserService {
     /**
      * Authenticate a {@link User} with the passed {@link Token}.
      * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
-     * @return {@link UserDTO.UserResponse UserResponse} of the authenticated user.
+     * @return {@link UserDTO.UserAuthResponse UserAuthResponse} of the authenticated user.
      */
-    public UserDTO.UserResponse authUser(String authorization) {
-        return new UserDTO.UserResponse(validate(authorization));
+    public UserDTO.UserAuthResponse authUser(String authorization) {
+        return new UserDTO.UserAuthResponse(validate(authorization));
     }
 
     /**

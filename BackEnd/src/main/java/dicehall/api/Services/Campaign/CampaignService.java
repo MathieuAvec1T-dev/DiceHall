@@ -173,12 +173,20 @@ public class CampaignService {
                     campaignRequest.campaignUsers().forEach(campaignUserRequest -> {
                         if(campaignUserRequest.role() == Role.Owner) return;
                         addCampaignUser(campaign, savedCampaignUsers, campaignUserRequest);
+                        if(campaignUser.getUser().getActiveCampaign() == null) {
+                            campaignUser.getUser().setActiveCampaign(campaign);
+                            userRepository.save(campaignUser.getUser());
+                        }
                     });
                 } else if(campaignUser.getRole() == Role.Admin) {
                     savedCampaignUsers.removeIf(savedCampaignUser -> savedCampaignUser.getRole() != Role.Owner && savedCampaignUser.getRole() != Role.Admin);
                     campaignRequest.campaignUsers().forEach(campaignUserRequest -> {
                         if(campaignUserRequest.role() == Role.Owner || campaignUserRequest.role() == Role.Admin) return;
                         addCampaignUser(campaign, savedCampaignUsers, campaignUserRequest);
+                        if(campaignUser.getUser().getActiveCampaign() == null) {
+                            campaignUser.getUser().setActiveCampaign(campaign);
+                            userRepository.save(campaignUser.getUser());
+                        }
                     });
                 }
             }
@@ -224,5 +232,31 @@ public class CampaignService {
         newCampaignUser.setUser(userRepository.findById(campaignUserRequest.userID()).orElseThrow(()-> new ResourceNotFoundException("User", campaignUserRequest.userID().toString())));
         newCampaignUser.setRole(campaignUserRequest.role());
         savedCampaignUsers.add(newCampaignUser);
+    }
+
+    /**
+     * Get the Active {@link Campaign} for a {@link User}.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return The {@link CampaignDTO.CampaignResponse Campaign} that is set as active for the {@link User}.
+     */
+    public CampaignDTO.CampaignResponse getActiveCampaign(String authorization) {
+        User user = userService.validate(authorization);
+        if(user.getActiveCampaign() == null) throw new ResourceNotFoundException("Campaign", authorization);
+        return new CampaignDTO.CampaignResponse(user.getActiveCampaign());
+    }
+
+    /**
+     * Set the Active {@link Campaign} for a {@link User}.
+     * @param campaignId ID of the {@link Campaign}.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return The {@link CampaignDTO.CampaignResponse Campaign} that was set as active for the {@link User}.
+     */
+    public CampaignDTO.CampaignResponse setActiveCampaign(Integer campaignId, String authorization) {
+        User user = userService.validate(authorization);
+        Campaign campaign = campaignRepository.findById(campaignId).orElseThrow(()-> new ResourceNotFoundException("Campaign", campaignId.toString()));
+        if(campaign.getCampaignUsers().stream().noneMatch(campaignUser -> Objects.equals(campaignUser.getId().getUser_id(), user.getId()))) throw new IllegalStateException("User not part of the campaign.");
+        user.setActiveCampaign(campaign);
+        userRepository.save(user);
+        return new CampaignDTO.CampaignResponse(campaign);
     }
 }

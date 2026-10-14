@@ -1,6 +1,8 @@
 package dicehall.api.DTOs.User;
 
+import dicehall.api.DTOs.Campaign.CampaignDTO;
 import dicehall.api.Entities.User.User;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -11,12 +13,11 @@ public class UserDTO {
             this(user.getId(), user.getUsername(), user.getEmail());
         }
     }
-    public record UserAuthResponse(Integer id,@NotBlank @Size(min = 3, max = 64)  String username, @NotBlank @Size(min = 3, max = 64) @Email String email, TokenDTO.TokenAuthResponse token) {
+    public record UserAuthResponse(Integer id, @NotBlank @Size(min = 3, max = 64)  String username, @NotBlank @Size(min = 3, max = 64) @Email String email, TokenDTO.TokenAuthResponse token, @Nullable CampaignDTO.CampaignResponse activeCampaign) {
         public UserAuthResponse(User user) {
-            this(user.getId(), user.getUsername(), user.getEmail(), new TokenDTO.TokenAuthResponse(user.getToken()));
+            this(user.getId(), user.getUsername(), user.getEmail(), new TokenDTO.TokenAuthResponse(user.getToken()), user.getActiveCampaign() == null ? null : new CampaignDTO.CampaignResponse(user.getActiveCampaign()));
         }
     }
-
 
     public record UserCreateRequest(@NotBlank @Size(min = 3, max = 64) String username, @NotBlank @Size(min = 3, max = 64) @Email String email, @NotBlank @Size(min = 8, max = 64) String password) {}
     public record UserEditRequest(@Nullable @Size(min = 3, max = 64) String username, @Size(min = 3, max = 64) @Email @Nullable String email, @Size(min = 8, max = 64) @Nullable String password) {}

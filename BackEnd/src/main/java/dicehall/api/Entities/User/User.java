@@ -1,5 +1,6 @@
 package dicehall.api.Entities.User;
 
+import dicehall.api.Entities.Campaign.Campaign;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -32,4 +33,8 @@ public class User {
 
     @OneToOne(mappedBy = "user",cascade = CascadeType.ALL, orphanRemoval = true)
     private Token token;
+
+    @ManyToOne
+    @JoinColumn(name = "activecampaign_id")
+    private Campaign activeCampaign;
 }
