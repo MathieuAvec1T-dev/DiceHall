@@ -73,7 +73,6 @@ entity Rule {
 entity Stat {
     + id : int <<generated>>
     --
-    * rule_id : int <<FK>>
     * name : string(64)
 }
 
@@ -101,6 +100,11 @@ entity ItemStat {
     * value : int
 }
 
+entity RuleStat {
+    + rule_id : int <<FK>>
+    + stat_id : int <<FK>>
+}
+
 User ||--o{ Token
 Campaign ||--o{ Character
 Character }o--|| User
@@ -112,7 +116,8 @@ CampaignRule }o--|| Campaign
 Rule ||--o{ CampaignRule
 CampaignUser -- Role
 Campaign ||--o{ Item
-Rule ||--o{ Stat
+Rule ||--o{ RuleStat
+RuleStat }o--|| Stat
 Stat ||--o{ CharacterStat
 Rule ||--o{ RuleTag
 RuleTag }o--|| Tag
