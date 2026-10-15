@@ -7,6 +7,8 @@ import { createRouter, createWebHistory } from "vue-router";
 import Auth from "@/layers/Auth.vue";
 import Guest from "@/layers/Guest.vue";
 import Profile from "@/pages/Profile.vue";
+import CampaignShow from "@/pages/campaign/CampaignShow.vue";
+import CampaignJoin from "@/pages/campaign/CampaignJoin.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -43,6 +45,14 @@ const router = createRouter({
       path: "/campaign/new",
       name: "campaignNew",
       component: CampaignNew
+    }, {
+      path: "/campaign/:id",
+      name: "campaignShow",
+      component: CampaignShow
+    }, {
+      path: "/campaign/:id/join",
+      name: "campaignJoin",
+      component: CampaignJoin
     }]
   }]
 });
