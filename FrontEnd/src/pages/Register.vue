@@ -3,6 +3,11 @@ import router from "@/router";
 import { useUserStore } from "@/stores/user";
 import { ref, reactive } from "vue";
 
+import SplitLayout from "@/components/layouts/SplitLayout.vue";
+import ButtonLayout from "@/components/base/ButtonLayout.vue";
+
+import authImage from "@/assets/images/auth.jpg";
+
 const userStore = useUserStore();
 
 const form = reactive({
@@ -58,37 +63,72 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div>
-    <h1>Inscription</h1>
-    <form @submit.prevent="handleSubmit">
-      <span v-if="errors.global">{{ errors.global }}</span>
-      <div>
-        <label for="email">Mail</label>
-        <span v-if="errors.email" class="error">{{ errors.email }}</span>
-        <input
-          name="email"
-          v-model.trim="form.email"
-        />
+  <SplitLayout :image="authImage">
+    <div class="auth">
+      <div class="auth__intro">
+        <h1>Inscrivez-vous</h1>
+        <p>
+          Créez votre compte pour gérer vos campagnes, vos personnages, lancer vos dés et
+          suivre vos séances de jeu de rôle sur une seule application !
+        </p>
       </div>
-      <div>
-        <label for="username">Pseudo</label>
-        <span v-if="errors.username" class="error">{{ errors.username }}</span>
-        <input
-          name="username"
-          v-model.trim="form.username"
-        />
+
+      <form class="auth__form" novalidate @submit.prevent="handleSubmit">
+        <p v-if="errors.global" class="error">{{ errors.global }}</p>
+
+        <div class="field">
+          <label for="email">Adresse mail</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            v-model.trim="form.email"
+          />
+          <span v-if="errors.email" class="error">{{ errors.email }}</span>
+        </div>
+
+        <div class="field">
+          <label for="username">Pseudo</label>
+          <input
+            id="username"
+            name="username"
+            autocomplete="username"
+            v-model.trim="form.username"
+          />
+          <span v-if="errors.username" class="error">{{ errors.username }}</span>
+        </div>
+
+        <div class="field">
+          <label for="password">Mot de passe</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            v-model="form.password"
+          />
+          <span v-if="errors.password" class="error">{{ errors.password }}</span>
+        </div>
+
+        <ButtonLayout type="submit" class="auth__submit">Inscription</ButtonLayout>
+      </form>
+
+      <p class="auth__divider">ou inscrivez-vous avec</p>
+
+      <ul class="auth__socials" role="list">
+        <li><button type="button">Google</button></li>
+        <li><button type="button">Discord</button></li>
+        <li><button type="button">Facebook</button></li>
+      </ul>
+
+      <div class="auth__footer">
+        <p>
+          Déjà un compte ? <RouterLink to="/login">Connectez-vous</RouterLink>
+        </p>
       </div>
-      <div>
-        <label for="password">Mot de passe</label>
-        <span v-if="errors.password" class="error">{{ errors.password }}</span>
-        <input
-          name="password"
-          v-model.trim="form.password"
-          type="password"
-        />
-      </div>
-      <input type="submit" value="S'inscrire"/>
-    </form>
-    <RouterLink to="login">J'ai déjà un compte</RouterLink>
-  </div>
+    </div>
+  </SplitLayout>
 </template>
+
+<style scoped src="@/assets/styles/auth.css"></style>

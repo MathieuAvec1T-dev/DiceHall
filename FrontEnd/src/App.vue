@@ -3,16 +3,23 @@ import Header from "@/components/Header.vue";
 </script>
 
 <template>
-  <Header />
-  <RouterView />
+  <div class="app">
+    <Header />
+    <main>
+      <RouterView />
+    </main>
+  </div>
 </template>
 
 <style scoped>
-header {
-  background-color: grey;
+.app {
   display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
 }
-header > * {
-  margin: auto;
+
+main {
+  display: grid;
+  flex: 1;
 }
 </style>
