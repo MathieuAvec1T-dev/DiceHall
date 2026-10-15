@@ -4,6 +4,7 @@ import { defineStore } from "pinia";
 export const useUserStore = defineStore("user", () => {
   const token = ref(localStorage.getItem("token") ?? null);
   const user = ref({});
+  const activeCampaign = ref({});
 
   let ready = Promise.resolve();
 
@@ -17,6 +18,8 @@ export const useUserStore = defineStore("user", () => {
       const data = await res.json();
       if (res.ok) {
         delete data.token;
+        activeCampaign.value = data.activeCampaign;
+        delete data.activeCampaign;
         user.value = data;
       } 
     });
@@ -34,6 +37,7 @@ export const useUserStore = defineStore("user", () => {
   return {
     ready,
     user,
+    activeCampaign,
     token,
     setToken
   };

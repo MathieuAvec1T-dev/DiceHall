@@ -8,8 +8,8 @@ const error = ref(null);
 const campaigns = ref([]);
 
 (async () => {
+  await userStore.ready;
   if (userStore.user.id) {
-    await userStore.ready;
     fetch(`${window.location.protocol}//${window.location.hostname}:8080/campaigns/user/${userStore.user.id}?addPrivate=true`, {
       method: "GET",
       headers: {
