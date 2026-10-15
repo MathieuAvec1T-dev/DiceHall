@@ -1,37 +1,49 @@
 import CampaignNew from "@/pages/campaign/CampaignNew.vue";
 import CampaignsList from "@/pages/campaign/CampaignsList.vue";
-import Homepage from "@/pages/Homepage.vue";
-import Login from "@/pages/Login.vue";
-import Logout from "@/pages/Logout.vue";
-import Register from "@/pages/Register.vue";
+import Login from "@/pages/auth/Login.vue";
+import Logout from "@/pages/auth/Logout.vue";
+import Register from "@/pages/auth/Register.vue";
 import { createRouter, createWebHistory } from "vue-router";
+import Auth from "@/layers/Auth.vue";
+import Guest from "@/layers/Guest.vue";
+import Profile from "@/pages/Profile.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [{
     path: "/",
-    name: "homepage",
-    component: Homepage
+    name: "guest",
+    component: Guest,
+    children: [{
+      path: "/register",
+      name: "register",
+      component: Register
+    }, {
+      path: "/login",
+      name: "login",
+      component: Login
+    }]
   }, {
-    path: "/register",
-    name: "register",
-    component: Register
-  }, {
-    path: "/login",
-    name: "login",
-    component: Login
-  }, {
-    path: "/logout",
-    name: "logout",
-    component: Logout
-  }, {
-    path: "/campaigns",
-    name: "campaignsList",
-    component : CampaignsList
-  }, {
-    path: "/campaign/new",
-    name: "campaignNew",
-    component: CampaignNew
+    name: "auth",
+    path: "/",
+    component: Auth,
+    children: [{
+      path: "/logout",
+      name: "logout",
+      component: Logout
+    }, {
+      path: "/profile",
+      name: "profile",
+      component: Profile
+    }, {
+      path: "/campaigns",
+      name: "campaignsList",
+      component: CampaignsList
+    }, {
+      path: "/campaign/new",
+      name: "campaignNew",
+      component: CampaignNew
+    }]
   }]
 });
 

@@ -24,23 +24,19 @@ async function handleSubmit() {
   if (!form.email) {
     errors.value.email = "L'email est requis";
   }
-  if (!form.username) {
-    errors.value.username = "Le nom d'utilisateur est requis";
-  }
   if (!form.password) {
     errors.value.password = "Le mot de passe est requis";
   }
 
   if (Object.keys(errors.value).length === 0) {
     try {
-      await fetch(`${window.location.protocol}//${window.location.hostname}:8080/users`, {
+      await fetch(`${window.location.protocol}//${window.location.hostname}:8080/users/auth/login`, {
         method: "POST",
         headers: {
-          "Content-Type": "Application/Json"
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           email: form.email,
-          username: form.username,
           password: form.password
         })
       }).then(async res => {
@@ -49,7 +45,7 @@ async function handleSubmit() {
           userStore.setToken(data.token.value);
           delete data.token;
           userStore.user = data;
-          router.push("/");
+          router.push("/profile");
         } else {
           errors.value.global = data.message;
         }
@@ -66,10 +62,10 @@ async function handleSubmit() {
   <SplitLayout :image="authImage">
     <div class="auth">
       <div class="auth__intro">
-        <h1>Inscrivez-vous</h1>
+        <h1>Connectez-vous</h1>
         <p>
-          Créez votre compte pour gérer vos campagnes, vos personnages, lancer vos dés et
-          suivre vos séances de jeu de rôle sur une seule application !
+          Accédez à vos campagnes, vos personnages, lancez vos dés et
+          suivez vos séances de jeu de rôle sur une seule application !
         </p>
       </div>
 
@@ -89,32 +85,21 @@ async function handleSubmit() {
         </div>
 
         <div class="field">
-          <label for="username">Pseudo</label>
-          <input
-            id="username"
-            name="username"
-            autocomplete="username"
-            v-model.trim="form.username"
-          />
-          <span v-if="errors.username" class="error">{{ errors.username }}</span>
-        </div>
-
-        <div class="field">
           <label for="password">Mot de passe</label>
           <input
             id="password"
             name="password"
             type="password"
-            autocomplete="new-password"
+            autocomplete="current-password"
             v-model="form.password"
           />
           <span v-if="errors.password" class="error">{{ errors.password }}</span>
         </div>
 
-        <ButtonLayout type="submit" class="auth__submit">Inscription</ButtonLayout>
+        <ButtonLayout type="submit" class="auth__submit">Connexion</ButtonLayout>
       </form>
 
-      <p class="auth__divider">ou inscrivez-vous avec</p>
+      <p class="auth__divider">ou continuez avec</p>
 
       <ul class="auth__socials" role="list">
         <li><button type="button">Google</button></li>
@@ -124,11 +109,13 @@ async function handleSubmit() {
 
       <div class="auth__footer">
         <p>
-          Déjà un compte ? <RouterLink to="/login">Connectez-vous</RouterLink>
+          Pas encore de compte ? <RouterLink to="/register">Inscrivez-vous</RouterLink>
         </p>
+        <RouterLink to="/forgot-password">Mot de passe oublié</RouterLink>
       </div>
     </div>
   </SplitLayout>
 </template>
+
 
 <style scoped src="@/assets/styles/auth.css"></style>

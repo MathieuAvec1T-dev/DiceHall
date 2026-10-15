@@ -7,7 +7,8 @@ const userStore = useUserStore();
 
 const form = reactive({
   name: "",
-  private: false
+  private: false,
+  rules: []
 });
 
 const errors = ref({});
@@ -29,7 +30,8 @@ async function handleSubmit() {
         },
         body: JSON.stringify({
           name: form.name,
-          privacy: form.private
+          privacy: form.private,
+          ruleIDs: form.rules
         })
       }).then(async res => {
         const data = await res.json();
@@ -44,6 +46,17 @@ async function handleSubmit() {
     }
   }
 }
+
+// @TODO : mock
+const rules = [{
+  id: 1,
+  name: 'test1',
+  description: 'desc1'
+}, {
+  id: 2,
+  name: 'test2',
+  description: 'desc2'
+}];
 
 </script>
 
@@ -67,6 +80,21 @@ async function handleSubmit() {
           v-model.trim="form.private"
           type="checkbox"
         />
+      </div>
+      <div>
+        <label for="rules">Règles</label>
+        <span v-if="errors.rules" class="error">{{ errors.rules }}</span>
+        <div>
+          <div v-for="rule in rules" v-bind:key="rule.id">
+            <input
+              name="rules[]"
+              v-model.trim="form.rules"
+              type="checkbox"
+              :value="rule.id"
+            />
+            <span>{{ rule.name }}</span>
+          </div>
+        </div>
       </div>
       <input type="submit" value="Créer la campagne"/>
     </form>

@@ -12,11 +12,7 @@ fetch(`${window.location.protocol}//${window.location.hostname}:8080/users/auth/
 }).then(() => {
   userStore.user = {};
   userStore.setToken(null);
-  router.push("/");
+  router.push("/login");
 });
 
 </script>
-
-<template>
-  <div></div>
-</template>
