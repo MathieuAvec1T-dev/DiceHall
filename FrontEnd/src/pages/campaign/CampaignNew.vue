@@ -36,7 +36,12 @@ async function handleSubmit() {
       }).then(async res => {
         const data = await res.json();
         if (res.ok) {
-          router.push("/campaigns");
+          if (!userStore.activeCampaign.id) {
+            userStore.activeCampaign = data;
+            window.location.href = "/campaigns";
+          } else {
+            router.push("/campaigns");
+          }
         } else {
           errors.value.global = data.message;
         }

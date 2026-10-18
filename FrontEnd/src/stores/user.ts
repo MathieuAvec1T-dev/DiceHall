@@ -18,7 +18,7 @@ export const useUserStore = defineStore("user", () => {
       const data = await res.json();
       if (res.ok) {
         delete data.token;
-        activeCampaign.value = data.activeCampaign;
+        activeCampaign.value = data.activeCampaign ?? {};
         delete data.activeCampaign;
         user.value = data;
       } 

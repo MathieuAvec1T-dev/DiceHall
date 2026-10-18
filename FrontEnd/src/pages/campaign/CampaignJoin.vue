@@ -11,8 +11,14 @@ fetch(`${window.location.protocol}//${window.location.hostname}:8080/campaigns/j
   headers: {
   "Authorization": `Bearer ${userStore.token}`,
   }
-}).then(() => {
-  router.push(`/campaign/${route.params.id}`);
+}).then(async res => {
+  const data = await res.json();
+  if (!userStore.activeCampaign.id) {
+    userStore.activeCampaign = data;
+    window.location.href = `/campaign/${route.params.id}`;
+  } else {
+    router.push(`/campaign/${route.params.id}`);
+  }
 });
 
 </script>
