@@ -35,7 +35,9 @@ CREATE TABLE `campaign_user` (
 -- Structure de la table `character`
 CREATE TABLE `character` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `name` varchar(64) NOT NULL,
+  `firstname` varchar(64),
+  `lastname` varchar(64),
+  `nickname` varchar(64),
   `user_id` int(11) NOT NULL,
   `campaign_id` int(11) NOT NULL,
   `validate` boolean NOT NULL
@@ -45,7 +47,7 @@ CREATE TABLE `character` (
 CREATE TABLE `character_stat` (
   `owner_id` int(11) NOT NULL,
   `stat_id` int(11) NOT NULL,
-  `value` int(11) NOT NULL
+  `value` varchar(64) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Structure de la table `item`
@@ -63,7 +65,7 @@ CREATE TABLE `item_stat` (
   `item_id` int(11) NOT NULL,
   `stat_id` int(11) NOT NULL,
   `slot` varchar(32),
-  `value` int(11) NOT NULL
+  `value` varchar(64) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Structure de la table `rule`
@@ -88,7 +90,12 @@ CREATE TABLE `rule_tag` (
 -- Structure de la table `stat`
 CREATE TABLE `stat` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `name` varchar(64) NOT NULL
+  `name` varchar(64) NOT NULL,
+  `required` boolean NOT NULL,
+  `selection` varchar(1024),
+  `default` varchar(64),
+  `min` int(11),
+  `max` int(11)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Structure de la table `tag`

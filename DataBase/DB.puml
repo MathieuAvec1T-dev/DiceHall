@@ -41,7 +41,9 @@ enum Role {
 entity Character {
     + id : int <<generated>>
     --
-    * name : string(64)
+    firstname : string(64)
+    lastname : string(64)
+    nickname : string(64)
     * user_id : int <<FK>>
     * campaign_id : int <<FK>>
     * validate : boolean
@@ -61,7 +63,7 @@ entity CharacterStat {
     + owner_id : int <<FK>>
     + stat_id : int <<FK>>
     --
-    * value : int
+    * value : string(64)
 }
 
 entity Rule {
@@ -75,6 +77,11 @@ entity Stat {
     + id : int <<generated>>
     --
     * name : string(64)
+    * required : boolean
+    selection : string(1024)
+    default : string(64)
+    min : int
+    max : int
 }
 
 entity Tag {
@@ -98,7 +105,7 @@ entity ItemStat {
     + stat_id : int <<FK>>
     --
     slot : string(32)
-    * value : int
+    * value : string(64)
 }
 
 entity RuleStat {
