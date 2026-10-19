@@ -44,6 +44,7 @@ entity Character {
     * name : string(64)
     * user_id : int <<FK>>
     * campaign_id : int <<FK>>
+    * validate : boolean
 }
 
 entity Item {

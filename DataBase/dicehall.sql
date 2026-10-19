@@ -37,7 +37,8 @@ CREATE TABLE `character` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `name` varchar(64) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `campaign_id` int(11) NOT NULL
+  `campaign_id` int(11) NOT NULL,
+  `validate` boolean NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Structure de la table `character_stat`
