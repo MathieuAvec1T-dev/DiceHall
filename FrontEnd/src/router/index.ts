@@ -9,6 +9,7 @@ import Guest from "@/layers/Guest.vue";
 import Profile from "@/pages/Profile.vue";
 import CampaignShow from "@/pages/campaign/CampaignShow.vue";
 import CampaignJoin from "@/pages/campaign/CampaignJoin.vue";
+import RulesList from "@/pages/RulesList.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -53,6 +54,10 @@ const router = createRouter({
       path: "/campaign/:id/join",
       name: "campaignJoin",
       component: CampaignJoin
+    }, {
+      path: "/campaign/:id/rules",
+      name: "rulesList",
+      component: RulesList
     }]
   }]
 });

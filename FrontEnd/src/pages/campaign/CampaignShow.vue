@@ -28,7 +28,8 @@ fetch(`${window.location.protocol}//${window.location.hostname}:8080/campaigns/i
 
 <template>
   <h1>{{ campaign.name }}</h1>
-  <button>Règles</button>
+  <span v-if="error">{{ error }}</span>
+  <RouterLink :to="`/campaign/${campaign.id}/rules`">Règles</RouterLink>
   <h3>Listes des joueurs :</h3>
   <ul>
     <li v-for="player in campaign.campaignUsers" v-bind:key="player.id">
