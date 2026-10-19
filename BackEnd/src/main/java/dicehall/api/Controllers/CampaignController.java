@@ -1,6 +1,8 @@
 package dicehall.api.Controllers;
 
 import dicehall.api.DTOs.Campaign.CampaignDTO;
+import dicehall.api.DTOs.Rule.RuleDTO;
+import dicehall.api.DTOs.Rule.TagDTO;
 import dicehall.api.Security.Exceptions.ErrorResponse;
 import dicehall.api.Services.Campaign.CampaignService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
@@ -69,6 +72,30 @@ public class CampaignController {
     public List<CampaignDTO.CampaignResponse> getByCampaignName(@PathVariable String searchParam, @RequestParam(required = false) Pageable pageable, @RequestParam(required = false) Boolean addPrivate, @RequestHeader(value = "Authorization", required = false) String authorization) {
         return campaignService.findIfNameContains(searchParam, pageable, addPrivate != null && addPrivate, authorization);
     }
+
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Rule(s) were found.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = RuleDTO.RuleResponse.class)))),
+            @ApiResponse(responseCode = "404", description = "Campaign not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Campaign not found by ID example.", value = "{\"status\": 404, \"message\": \"Campaign was not found with value: 26\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+            @ApiResponse(responseCode = "401", description = "Wrong Credentials.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example.", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
+    })
+    @SecurityRequirement(name = "Authorization")
+    @Operation(summary = "Get Rules from a Campaign ID.", description = "Returns the rules's public data. Need the \"Authorization\" token if private campaigns are asked. Returns 404 if no campaign with this ID exists.")
+    @GetMapping("/rules/{campaignID}")
+    public List<RuleDTO.RuleResponse> GetRules(@PathVariable Integer campaignID, @Nullable Pageable pageable, @RequestHeader(value = "Authorization", required = false) String authorization) {
+        return campaignService.findRules(campaignID, pageable, authorization);
+    }
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Tag(s) were found.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = TagDTO.TagResponse.class)))),
+            @ApiResponse(responseCode = "404", description = "Campaign not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Campaign not found by ID example.", value = "{\"status\": 404, \"message\": \"Campaign was not found with value: 26\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+            @ApiResponse(responseCode = "401", description = "Wrong Credentials.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example.", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
+    })
+    @SecurityRequirement(name = "Authorization")
+    @Operation(summary = "Get Rules by Tags from a Campaign ID.", description = "Returns the tags with rules's public data. Need the \"Authorization\" token if private campaigns are asked. Returns 404 if no campaign with this ID exists.")
+    @GetMapping("/rules/tags/{campaignID}")
+    public List<TagDTO.TagResponse> GetRulesPerTags(@PathVariable Integer campaignID, @Nullable Pageable pageable, @RequestHeader(value = "Authorization", required = false) String authorization) {
+        return campaignService.findRulesPerTags(campaignID, pageable, authorization);
+    }
+
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Campaign was created.", content = @Content(schema = @Schema(implementation = CampaignDTO.CampaignResponse.class))),
             @ApiResponse(responseCode = "409", description = "Illegal argument.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Unknown Rule ID.", value = "{\"status\": 409, \"message\": \"One or more rule IDs do not exist.\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),

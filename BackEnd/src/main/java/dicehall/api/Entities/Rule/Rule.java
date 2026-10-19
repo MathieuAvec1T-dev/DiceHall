@@ -25,6 +25,9 @@ public class Rule {
     @Column(nullable = false, length = 1024)
     private String description;
 
+    @ManyToMany(mappedBy = "rules")
+    private Set<Campaign> campaigns;
+
     @ManyToMany
     @JoinTable(name = "rule_tag", joinColumns = @JoinColumn(name = "rule_id"), inverseJoinColumns = @JoinColumn(name = "tag_id"))
     private Set<Tag> tags;

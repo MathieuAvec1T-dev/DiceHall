@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Set;
+
 @Entity
 @Getter
 @Setter
@@ -19,4 +21,7 @@ public class Tag {
 
     @Column(nullable = false, length = 64)
     private String name;
+
+    @ManyToMany(mappedBy = "tags")
+    private Set<Rule> rules;
 }

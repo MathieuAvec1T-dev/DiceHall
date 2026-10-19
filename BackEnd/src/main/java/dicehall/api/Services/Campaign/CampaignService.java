@@ -2,6 +2,8 @@ package dicehall.api.Services.Campaign;
 
 import dicehall.api.DTOs.Campaign.CampaignDTO;
 import dicehall.api.DTOs.Campaign.CampaignUserDTO;
+import dicehall.api.DTOs.Rule.RuleDTO;
+import dicehall.api.DTOs.Rule.TagDTO;
 import dicehall.api.Entities.Campaign.Campaign;
 import dicehall.api.Entities.Campaign.CampaignUser;
 import dicehall.api.Entities.Campaign.CampaignUserId;
@@ -12,6 +14,7 @@ import dicehall.api.Entities.User.User;
 import dicehall.api.Repositories.Campaign.CampaignRepository;
 import dicehall.api.Repositories.Campaign.CampaignUserRepository;
 import dicehall.api.Repositories.Rule.RuleRepository;
+import dicehall.api.Repositories.Rule.TagRepository;
 import dicehall.api.Repositories.User.UserRepository;
 import dicehall.api.Security.Exceptions.ResourceNotFoundException;
 import dicehall.api.Services.User.UserService;
@@ -29,13 +32,35 @@ public class CampaignService {
     private final CampaignRepository campaignRepository;
     private final CampaignUserRepository campaignUserRepository;
     private final UserRepository userRepository;
+    private final TagRepository tagRepository;
 
-    public CampaignService(UserService userService, RuleRepository ruleRepository, CampaignRepository campaignRepository, CampaignUserRepository campaignUserRepository, UserRepository userRepository) {
+    public CampaignService(UserService userService, RuleRepository ruleRepository, CampaignRepository campaignRepository, CampaignUserRepository campaignUserRepository, UserRepository userRepository, TagRepository tagRepository) {
         this.userService = userService;
         this.ruleRepository = ruleRepository;
         this.campaignRepository = campaignRepository;
         this.campaignUserRepository = campaignUserRepository;
         this.userRepository = userRepository;
+        this.tagRepository = tagRepository;
+    }
+
+    public List<RuleDTO.RuleResponse> findRules(Integer id, Pageable pageable, String authorization){
+        Campaign campaign = campaignRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Campaign", id.toString()));
+        if(campaign.getPrivacy()) {
+            if(authorization==null) throw new BadCredentialsException("Invalid token for this campaign: " + "null");
+            User user = userService.validate(authorization);
+            if(campaign.getCampaignUsers().stream().noneMatch(campaignUser -> Objects.equals(campaignUser.getId().getUser_id(), user.getId()))) throw new BadCredentialsException("Invalid token for this campaign: " + authorization);
+        }
+        return ruleRepository.findByCampaignId(id, pageable).stream().map(RuleDTO.RuleResponse::new).toList();
+    }
+
+    public List<TagDTO.TagResponse> findRulesPerTags(Integer id, Pageable pageable, String authorization){
+        Campaign campaign = campaignRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Campaign", id.toString()));
+        if(campaign.getPrivacy()) {
+            if(authorization==null) throw new BadCredentialsException("Invalid token for this campaign: " + "null");
+            User user = userService.validate(authorization);
+            if(campaign.getCampaignUsers().stream().noneMatch(campaignUser -> Objects.equals(campaignUser.getId().getUser_id(), user.getId()))) throw new BadCredentialsException("Invalid token for this campaign: " + authorization);
+        }
+        return tagRepository.findByCampaignId(id, pageable).stream().map(TagDTO.TagResponse::new).toList();
     }
 
     /**
