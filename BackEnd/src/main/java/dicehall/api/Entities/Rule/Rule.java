@@ -1,5 +1,6 @@
 package dicehall.api.Entities.Rule;
 
+import dicehall.api.Entities.Campaign.Campaign;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
