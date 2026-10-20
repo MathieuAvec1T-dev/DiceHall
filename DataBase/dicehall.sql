@@ -93,7 +93,7 @@ CREATE TABLE `stat` (
   `name` varchar(64) NOT NULL,
   `required` boolean NOT NULL,
   `selection` varchar(1024),
-  `default` varchar(64),
+  `default_value` varchar(64),
   `min` int(11),
   `max` int(11)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

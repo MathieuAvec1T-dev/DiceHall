@@ -79,7 +79,7 @@ entity Stat {
     * name : string(64)
     * required : boolean
     selection : string(1024)
-    default : string(64)
+    default_value : string(64)
     min : int
     max : int
 }
