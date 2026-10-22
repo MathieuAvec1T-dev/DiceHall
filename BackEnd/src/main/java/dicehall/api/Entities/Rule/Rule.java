@@ -1,6 +1,8 @@
 package dicehall.api.Entities.Rule;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import dicehall.api.Entities.Campaign.Campaign;
+import dicehall.api.Entities.Campaign.Stat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -32,5 +34,12 @@ public class Rule {
     @ManyToMany
     @JoinTable(name = "rule_tag", joinColumns = @JoinColumn(name = "rule_id"), inverseJoinColumns = @JoinColumn(name = "tag_id"))
     private Set<Tag> tags;
+
+    @ManyToMany
+    @JsonIgnore
+    @JoinTable(name = "rule_stat", joinColumns = @JoinColumn(name = "rule_id"), inverseJoinColumns = @JoinColumn(name = "stat_id"))
+    private Set<Stat> stats;
+
+
 }
 

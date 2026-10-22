@@ -43,23 +43,43 @@ public class CampaignService {
         this.tagRepository = tagRepository;
     }
 
-    public List<RuleDTO.RuleResponse> findRules(Integer id, Pageable pageable, String authorization){
+    /**
+     * Get a Campaign by ID and verify if the user is authorized to access it.
+     * @param id of the {@link Campaign}.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return the found {@link CampaignDTO.CampaignResponse Campaign}.
+     */
+    private Campaign getCampaignIfAuthorized(Integer id, String authorization) {
         Campaign campaign = campaignRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Campaign", id.toString()));
         if(campaign.getPrivacy()) {
             if(authorization==null) throw new BadCredentialsException("Invalid token for this campaign: " + "null");
             User user = userService.validate(authorization);
             if(campaign.getCampaignUsers().stream().noneMatch(campaignUser -> Objects.equals(campaignUser.getId().getUser_id(), user.getId()))) throw new BadCredentialsException("Invalid token for this campaign: " + authorization);
         }
+        return campaign;
+    }
+
+    /**
+     * Find the Rules in a certain Campaign.
+     * @param id of the {@link Campaign}.
+     * @param pageable The {@link Pageable} parameters for pagination.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return a {@link List<RuleDTO.RuleResponse> List of Rule} found.
+     */
+    public List<RuleDTO.RuleResponse> findRules(Integer id, Pageable pageable, String authorization){
+        getCampaignIfAuthorized(id, authorization);
         return ruleRepository.findByCampaignId(id, pageable).stream().map(RuleDTO.RuleResponse::new).toList();
     }
 
+    /**
+     * Find the Tags containing the Rules in a certain Campaign.
+     * @param id of the {@link Campaign}.
+     * @param pageable The {@link Pageable} parameters for pagination.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return a {@link List<TagDTO.TagResponse> List of Tags} found.
+     */
     public List<TagDTO.TagResponse> findRulesPerTags(Integer id, Pageable pageable, String authorization){
-        Campaign campaign = campaignRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Campaign", id.toString()));
-        if(campaign.getPrivacy()) {
-            if(authorization==null) throw new BadCredentialsException("Invalid token for this campaign: " + "null");
-            User user = userService.validate(authorization);
-            if(campaign.getCampaignUsers().stream().noneMatch(campaignUser -> Objects.equals(campaignUser.getId().getUser_id(), user.getId()))) throw new BadCredentialsException("Invalid token for this campaign: " + authorization);
-        }
+        getCampaignIfAuthorized(id, authorization);
         return tagRepository.findByCampaignId(id, pageable).stream().map(TagDTO.TagResponse::new).toList();
     }
 
@@ -90,13 +110,7 @@ public class CampaignService {
      * @return the found {@link CampaignDTO.CampaignResponse Campaign}.
      */
     public CampaignDTO.CampaignResponse findById(Integer id , String authorization) {
-        Campaign campaign = campaignRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Campaign", id.toString()));
-        if(campaign.getPrivacy()) {
-            if(authorization==null) throw new BadCredentialsException("Invalid token for this campaign: " + "null");
-            User user = userService.validate(authorization);
-            if(campaign.getCampaignUsers().stream().noneMatch(campaignUser -> Objects.equals(campaignUser.getId().getUser_id(), user.getId()))) throw new BadCredentialsException("Invalid token for this campaign: " + authorization);
-        }
-        return new CampaignDTO.CampaignResponse(campaign);
+        return new CampaignDTO.CampaignResponse(getCampaignIfAuthorized(id,authorization));
     }
 
     /**
