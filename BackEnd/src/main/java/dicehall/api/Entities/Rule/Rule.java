@@ -28,6 +28,12 @@ public class Rule {
     @Column(nullable = false, length = 1024)
     private String description;
 
+    @Column(nullable = false, length = 244)
+    private String operation;
+
+    @Column(nullable = false)
+    private Integer priority;
+
     @ManyToMany(mappedBy = "rules")
     private Set<Campaign> campaigns;
 
@@ -40,6 +46,24 @@ public class Rule {
     @JoinTable(name = "rule_stat", joinColumns = @JoinColumn(name = "rule_id"), inverseJoinColumns = @JoinColumn(name = "stat_id"))
     private Set<Stat> stats;
 
+    //Copy method to keep a Rule in a Hashmap without causing problem with hibernate.
+    public Rule copy(){
+        Rule newRule = new Rule();
+        newRule.setName(name);
+        newRule.setDescription(description);
+        newRule.setOperation(operation);
+        newRule.setCampaigns(campaigns);
+        newRule.setTags(tags);
+        newRule.setStats(stats);
+        newRule.setPriority(priority);
+        return newRule;
+    }
 
+    //Copy method to keep a Rule in a Hashmap without causing problem with hibernate.
+    public Rule copyWithId(){
+        Rule newRule = copy();
+        newRule.setId(id);
+        return newRule;
+    }
 }
 

@@ -27,6 +27,20 @@ public class CharacterController {
     }
 
     @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Character was found.", content = @Content(schema = @Schema(implementation = CharacterDTO.CharacterResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Access Denied.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "User Not part of Campaign example.", value = "{\"status\": 403, \"message\": \"You are not part of the Campaign\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+            @ApiResponse(responseCode = "404", description = "Entity not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Stat not found by ID example.", value = "{\"status\": 404, \"message\": \"Stat was not found with value: 26\nStat with ID: '26' was not found in your campaign.\", \"timestamp\": \"2026-01-15T10:30:00\"}"), @ExampleObject(name = "Character not found by ID example.", value = "{\"status\": 404, \"message\": \"Character was not found with value: 26\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+            @ApiResponse(responseCode = "409", description = "Illegal argument.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Error with a Rule.", value = "{\"status\": 400, \"message\": \"Wrong argument in X: Explanation.\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+            @ApiResponse(responseCode = "401", description = "Wrong Credentials.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example.", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
+    })
+    @SecurityRequirement(name = "Authorization")
+    @Operation(summary = "Find a Character by ID.", description = "Returns the character's public data.")
+    @GetMapping("/{characterID}")
+    public CharacterDTO.CharacterResponse findCharacter(@PathVariable Integer characterID, @RequestHeader String authorization){
+        return characterService.findById(characterID, authorization);
+    }
+
+    @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Character was created.", content = @Content(schema = @Schema(implementation = CharacterDTO.CharacterResponse.class))),
             @ApiResponse(responseCode = "404", description = "Entity not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Campaign not found by ID example.", value = "{\"status\": 404, \"message\": \"Campaign was not found with value: 26\", \"timestamp\": \"2026-01-15T10:30:00\"}"),@ExampleObject(name = "User not found by ID example.", value = "{\"status\": 404, \"message\": \"User was not found with value: 26\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
             @ApiResponse(responseCode = "403", description = "Access Denied.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "User Not part of Campaign example.", value = "{\"status\": 403, \"message\": \"You are not part of the Campaign\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
@@ -37,7 +51,8 @@ public class CharacterController {
                     @ExampleObject(name = "Stat should be a number example.", value = "{\"status\": 400, \"message\": \"Stat \"Stat1\" should be a number.\", \"timestamp\": \"2026-01-15T10:30:00\"}"),
                     @ExampleObject(name = "Stat inferior or superior to what is allowed example.", value = "{\"status\": 400, \"message\": \"Stat \"Stat1\" is inferior to minimum/maximum value \"80\".\", \"timestamp\": \"2026-01-15T10:30:00\"}"),
                     @ExampleObject(name = "Value of selectable Stat not in list example.", value = "{\"status\": 400, \"message\": \"Value 'badValue' isn't part of the available options.\", \"timestamp\": \"2026-01-15T10:30:00\"}"),
-                    @ExampleObject(name = "One of three name field needed example.", value = "{\"status\": 400, \"message\": \"Need at least one of the three name fields.\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+                    @ExampleObject(name = "One of three name field needed example.", value = "{\"status\": 400, \"message\": \"Need at least one of the three name fields.\", \"timestamp\": \"2026-01-15T10:30:00\"}"),
+                    @ExampleObject(name = "Error with a Rule.", value = "{\"status\": 400, \"message\": \"Wrong argument in X: Explanation.\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
             @ApiResponse(responseCode = "401", description = "Wrong Credentials.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example.", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
     })
     @SecurityRequirement(name = "Authorization")
@@ -61,7 +76,8 @@ public class CharacterController {
                     @ExampleObject(name = "Stat should be a number example.", value = "{\"status\": 400, \"message\": \"Stat \"Stat1\" should be a number.\", \"timestamp\": \"2026-01-15T10:30:00\"}"),
                     @ExampleObject(name = "Stat inferior or superior to what is allowed example.", value = "{\"status\": 400, \"message\": \"Stat \"Stat1\" is inferior to minimum/maximum value \"80\".\", \"timestamp\": \"2026-01-15T10:30:00\"}"),
                     @ExampleObject(name = "Value of selectable Stat not in list example.", value = "{\"status\": 400, \"message\": \"Value 'badValue' isn't part of the available options.\", \"timestamp\": \"2026-01-15T10:30:00\"}"),
-                    @ExampleObject(name = "One of three name field needed example.", value = "{\"status\": 400, \"message\": \"Need at least one of the three name fields.\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+                    @ExampleObject(name = "One of three name field needed example.", value = "{\"status\": 400, \"message\": \"Need at least one of the three name fields.\", \"timestamp\": \"2026-01-15T10:30:00\"}"),
+                    @ExampleObject(name = "Error with a Rule.", value = "{\"status\": 400, \"message\": \"Wrong argument in X: Explanation.\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
             @ApiResponse(responseCode = "401", description = "Wrong Credentials.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example.", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
     })
     @SecurityRequirement(name = "Authorization")

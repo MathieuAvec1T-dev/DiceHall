@@ -1,5 +1,7 @@
 package dicehall.api.Entities.Campaign;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import dicehall.api.Entities.Rule.Rule;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -37,6 +39,10 @@ public class Stat {
 
     @Column
     private Integer max;
+
+    @JsonSetter(nulls = Nulls.SKIP)
+    @Column
+    private Boolean auto_toggleable = false;
 
     @ManyToMany(mappedBy = "stats")
     private Set<Rule> rules;

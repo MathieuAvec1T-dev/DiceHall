@@ -37,4 +37,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException exception) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(403, exception.getMessage(), LocalDateTime.now()));
     }
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleInternalError(RuntimeException exception) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(500, exception.getMessage(), LocalDateTime.now()));
+    }
 }

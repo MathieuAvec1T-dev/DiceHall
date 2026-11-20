@@ -1,5 +1,6 @@
 package dicehall.api.Services.Character;
 
+import dicehall.api.DTOs.Campaign.CampaignDTO;
 import dicehall.api.DTOs.Character.CharacterDTO;
 import dicehall.api.DTOs.Character.CharacterStatDTO;
 import dicehall.api.Entities.Campaign.Campaign;
@@ -10,17 +11,15 @@ import dicehall.api.Entities.Character.CharacterStat;
 import dicehall.api.Entities.User.Token;
 import dicehall.api.Entities.User.User;
 import dicehall.api.Repositories.Campaign.CampaignRepository;
-import dicehall.api.Repositories.Campaign.StatRepository;
 import dicehall.api.Repositories.Character.CharacterRepository;
 import dicehall.api.Repositories.User.UserRepository;
 import dicehall.api.Security.Exceptions.ResourceNotFoundException;
+import dicehall.api.Services.Rule.RuleService;
 import dicehall.api.Services.User.UserService;
-import dicehall.api.Utility.Common;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,16 +27,31 @@ public class CharacterService {
 
     private final UserService userService;
     private final CampaignRepository campaignRepository;
-    private final StatRepository statRepository;
     private final CharacterRepository characterRepository;
     private final UserRepository userRepository;
+    private final RuleService ruleService;
+    private final CharacterStatService characterStatService;
 
-    public CharacterService(UserService userService, CampaignRepository campaignRepository, StatRepository statRepository, CharacterRepository characterRepository, UserRepository userRepository) {
+    public CharacterService(UserService userService, CampaignRepository campaignRepository, CharacterRepository characterRepository, UserRepository userRepository, RuleService ruleService, CharacterStatService characterStatService) {
         this.userService = userService;
         this.campaignRepository = campaignRepository;
-        this.statRepository = statRepository;
         this.characterRepository = characterRepository;
         this.userRepository = userRepository;
+        this.ruleService = ruleService;
+        this.characterStatService = characterStatService;
+    }
+
+    /**
+     * Find a Character by its ID
+     * @param characterID The id of the {@link Character} searched.
+     * @param authorization The {@code Authorization} Header containing {@code Bearer [}{@link Token TOKEN}{@code ]}.
+     * @return The {@link CharacterDTO.CharacterResponse Character} that was found.
+     */
+    public CharacterDTO.CharacterResponse findById(Integer characterID, String authorization) {
+        User user = userService.validate(authorization);
+        Character character = characterRepository.findById(characterID).orElseThrow(()->new ResourceNotFoundException("Character", characterID.toString()));
+        if(character.getCampaign().getCampaignUsers().stream().noneMatch(campaignUser -> Objects.equals(campaignUser.getUser().getId(), user.getId()))) throw new IllegalStateException("You are not part of the Campaign of this Character.");
+        return new CharacterDTO.CharacterResponse(character.getFirstname(), character.getLastname(), character.getNickname(), new CampaignDTO.CampaignForCharacterResponse(character.getCampaign()), ruleService.handleRules(character, new ArrayList<>(),null, new ArrayList<>()), character.getValidate());
     }
 
     /**
@@ -64,94 +78,16 @@ public class CharacterService {
     }
 
     /**
-     * Parse the Selection {@link String} field into a readable {@link List<String>}.
-     * @param stat The {@link Stat} with the Selection field to parse.
-     * @return a {@link List<String>}.
-     */
-    static public List<String> parseSelection(Stat stat){
-        if (stat.getSelection() == null || stat.getSelection().isBlank()) return new ArrayList<>();
-        return Arrays.stream(stat.getSelection().split(Pattern.quote("|||"))).map(String::trim).filter(selection -> !selection.isEmpty()).collect(Collectors.toList());
-    }
-
-    /**
-     * Validate if the value entered by {@link User} is one of the options in the Selection field.
-     * @param value The {@link String} value entered by {@link User}.
-     * @param stat The {@link Stat} with the Selection field.
-     * @return The trimmed value if correct.
-     */
-    private String validateSelectionValue(String value, Stat stat){
-        if(parseSelection(stat).contains(value.trim())) {
-            return value.trim();
-        } else {
-            throw new IllegalStateException("Value '" + value.trim() + "' isn't part of the available options.");
-        }
-    }
-
-    /**
-     * Check the {@link Stat} for any errors and set it to the {@link Character}
-     * @param value The {@link String} value entered by {@link User}.
-     * @param statID The {@link Integer id} of the {@link Stat} that is added to the {@link Character}.
-     * @param campaignID The {@link Integer id} of the {@link Campaign} of the {@link Character}.
-     * @param character The {@link Character} the {@link Stat} is gonna be added to.
-     * @return a {@link CharacterStat} that can be added to a {@link Character}.
-     */
-    private CharacterStat createCharacterStat(String value, Integer statID, Integer campaignID, Character character) {
-        CharacterStat characterStat = new CharacterStat();
-        characterStat.setCharacter(character);
-        Stat stat = statRepository.findByStatAndCampaignId(statID, campaignID).orElseThrow(() -> new ResourceNotFoundException("Stat", statID.toString()));
-        characterStat.setStat(stat);
-        if(value == null || value.isBlank()) {
-            //If Blank or null
-            //Check if required
-            if(stat.getRequired()) {
-                //Set Default value if available
-                if(stat.getDefaultValue() != null) {
-                    characterStat.setValue(stat.getDefaultValue());
-                } else {
-                    throw new IllegalStateException("Value required for stat \"" + stat.getName() + "\".");
-                }
-            } else if(stat.getMax() != null || stat.getMin() != null) {
-                //If Integer set to 0
-                characterStat.setValue(String.valueOf(0));
-            } else {
-                //Otherwise try to set to Default value
-                characterStat.setValue(stat.getDefaultValue());
-            }
-        } else {
-            //If Integer check for max and min value
-            if(stat.getMax() != null || stat.getMin() != null) {
-                if(Common.isInteger(value)) {
-                    Integer intValue = Integer.valueOf(value);
-                    if (stat.getMin() != null && intValue < stat.getMin())
-                        throw new IllegalStateException("Stat \"" + stat.getName() + "\" is inferior to minimum value \"" + stat.getMin() + "\".");
-                    if (stat.getMax() != null && intValue > stat.getMax())
-                        throw new IllegalStateException("Stat \"" + stat.getName() + "\" is superior to maximum value \"" + stat.getMax() + "\".");
-                    characterStat.setValue(value);
-                } else {
-                    throw new IllegalStateException("Stat \"" + stat.getName() + "\" should be a number.");
-                }
-            } else {
-                //If Selection field, validate the value
-                if(stat.getSelection() != null && !stat.getSelection().isBlank()) {
-                    characterStat.setValue(validateSelectionValue(value, stat));
-                }
-                characterStat.setValue(value);
-            }
-        }
-        return characterStat;
-    }
-
-    /**
      * Check if {@link User} sent all required {@link Stat Stats}, Verify all the {@link Stat Stats} and add them all to his {@link Character}.
      * @param characterStatsRequest {@link CharacterStatDTO.CharacterStatRequest CharacterStatRequest} containing the value inputted and the id of the concerned {@link Stat}.
      * @param campaign the {@link Campaign} the {@link Character} is linked to.
      * @param character the {@link Character} to add the {@link Stat Stats} to.
      */
-    private void addCharacterStats(List<CharacterStatDTO.CharacterStatRequest> characterStatsRequest, Campaign campaign, Character character) {
+    private void addCharacterStatsFromRequest(List<CharacterStatDTO.CharacterStatRequest> characterStatsRequest, Campaign campaign, Character character) {
         List<Stat> requiredStats = campaign.getRules().stream().flatMap(rule -> rule.getStats().stream()).filter(stat -> Boolean.TRUE.equals(stat.getRequired())).distinct().collect(Collectors.toCollection(ArrayList::new));
         Set<CharacterStat> characterStats = new HashSet<>();
         characterStatsRequest.forEach(characterStatRequest -> {
-            CharacterStat characterStat = createCharacterStat(characterStatRequest.value(), characterStatRequest.statID(), campaign.getId(), character);
+            CharacterStat characterStat = characterStatService.createCharacterStat(characterStatRequest.value(), characterStatRequest.statID(), campaign.getId(), character);
             characterStats.add(characterStat);
             requiredStats.remove(characterStat.getStat());
         });
@@ -188,7 +124,7 @@ public class CharacterService {
         Character character = new Character();
         if(campaign.getCampaignUsers().stream().noneMatch(campaignUser -> Objects.equals(campaignUser.getId().getCampaign_id(), request.campaignID()) && Objects.equals(campaignUser.getUser().getId(), user.getId()))) throw new AccessDeniedException("You are not part of the Campaign.");
         if(campaign.getCampaignUsers().stream().noneMatch(campaignUser -> Objects.equals(campaignUser.getId().getCampaign_id(), request.campaignID()) && Objects.equals(campaignUser.getUser().getId(), request.userID()))) throw new IllegalStateException("The selected User is not part of the Campaign.");
-        addCharacterStats(request.characterStats(), campaign, character);
+        addCharacterStatsFromRequest(request.characterStats(), campaign, character);
         canSetUser(request.userID(), user, campaign);
         character.setUser(request.userID() != null ? userRepository.findById(request.userID()).orElseThrow(()->new ResourceNotFoundException("User", request.userID().toString())) : user);
         setNames(request.firstname(), request.lastname(), request.nickname(), character);
@@ -210,14 +146,15 @@ public class CharacterService {
         Campaign campaign = character.getCampaign();
         if(campaign.getCampaignUsers().stream().noneMatch(campaignUser -> Objects.equals(campaignUser.getId().getCampaign_id(), campaign.getId()) && Objects.equals(campaignUser.getUser().getId(), user.getId()))) throw new IllegalStateException("You are not part of the Campaign.");
         if(campaign.getCampaignUsers().stream().noneMatch(campaignUser -> Objects.equals(campaignUser.getId().getCampaign_id(), campaign.getId()) && Objects.equals(campaignUser.getUser().getId(), request.userID()))) throw new IllegalStateException("The selected User is not part of the Campaign.");
-        addCharacterStats(request.characterStats(), campaign, character);
+        addCharacterStatsFromRequest(request.characterStats(), campaign, character);
         canSetUser(request.userID(), user, campaign);
         character.setUser(request.userID() != null ? userRepository.findById(request.userID()).orElseThrow(()->new ResourceNotFoundException("User", request.userID().toString())) : user);
         setNames(request.firstname(), request.lastName(), request.nickname(), character);
         character.setValidate(campaign.getCampaignUsers().stream().anyMatch(campaignUser -> Objects.equals(campaignUser.getId().getCampaign_id(), campaign.getId()) && Objects.equals(campaignUser.getUser().getId(), user.getId()) && (campaignUser.getRole() == Role.Admin || campaignUser.getRole() == Role.Owner)));
         character.setCampaign(campaign);
+        characterRepository.save(character);
 
-        return new CharacterDTO.CharacterResponse(characterRepository.save(character));
+        return new CharacterDTO.CharacterResponse(character.getFirstname(), character.getLastname(), character.getNickname(), new CampaignDTO.CampaignForCharacterResponse(campaign), ruleService.handleRules(character, request.characterStats().stream().filter(stat -> !stat.auto()).map(CharacterStatDTO.CharacterStatRequest::statID).toList(),null, new ArrayList<>()), character.getValidate());
     }
 
     /**

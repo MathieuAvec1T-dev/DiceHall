@@ -28,7 +28,7 @@ public class Campaign {
     @Column
     private Boolean privacy;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "campaign_rule", joinColumns = @JoinColumn(name = "campaign_id"), inverseJoinColumns = @JoinColumn(name = "rule_id"))
     private Set<Rule> rules;
 

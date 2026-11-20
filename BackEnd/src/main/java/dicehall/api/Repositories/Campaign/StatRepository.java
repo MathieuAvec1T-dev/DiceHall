@@ -8,6 +8,6 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface StatRepository extends JpaRepository<Stat, Integer> {
-    @Query("select distinct s from Stat s join s.rules r join r.campaigns c where s.id = :statId and c.id = :campaignId")
+    @Query("SELECT DISTINCT s FROM Stat s JOIN s.rules r JOIN r.campaigns c WHERE s.id = :statId AND c.id = :campaignId")
     Optional<Stat> findByStatAndCampaignId(@Param("statId") Integer statId, @Param("campaignId") Integer campaignId);
 }
