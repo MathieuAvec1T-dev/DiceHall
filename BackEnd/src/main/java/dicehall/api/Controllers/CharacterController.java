@@ -1,8 +1,10 @@
 package dicehall.api.Controllers;
 
 import dicehall.api.DTOs.Character.CharacterDTO;
+import dicehall.api.DTOs.Character.CharacterStatDTO;
 import dicehall.api.Security.Exceptions.ErrorResponse;
 import dicehall.api.Services.Character.CharacterService;
+import dicehall.api.Services.Character.RollService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -21,9 +23,11 @@ import org.springframework.web.bind.annotation.*;
 public class CharacterController {
 
     private final CharacterService characterService;
+    private final RollService rollService;
 
-    public CharacterController(CharacterService characterService) {
+    public CharacterController(CharacterService characterService, RollService rollService) {
         this.characterService = characterService;
+        this.rollService = rollService;
     }
 
     @ApiResponses({
@@ -96,9 +100,25 @@ public class CharacterController {
             @ApiResponse(responseCode = "401", description = "Wrong Credentials.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example.", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
     })
     @SecurityRequirement(name = "Authorization")
-    @Operation(summary = "Validate a Character.", description = "Returns the campaigns's public data. Return 409 if user does not have permissions to Validate.")
+    @Operation(summary = "Validate a Character.", description = "Returns the character's public data. Return 409 if user does not have permissions to Validate.")
     @PostMapping("/validate")
     public CharacterDTO.CharacterResponse validateCharacter(@Valid @RequestBody CharacterDTO.CharacterValidateRequest request, @RequestHeader String authorization){
         return characterService.validate(request, authorization);
+    }
+
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Roll was done.", content = @Content(schema = @Schema(implementation = CharacterDTO.CharacterRollResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Entity not found.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {
+                    @ExampleObject(name = "Stat not found by ID example.", value = "{\"status\": 404, \"message\": \"Stat was not found with value: 26\", \"timestamp\": \"2026-01-15T10:30:00\"}"),
+                    @ExampleObject(name = "Character not found by ID example.", value = "{\"status\": 404, \"message\": \"Character was not found with value: 26\", \"timestamp\": \"2026-01-15T10:30:00\"}"),})),
+            @ApiResponse(responseCode = "409", description = "Illegal argument.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Error with a Rule.", value = "{\"status\": 400, \"message\": \"Wrong argument in X: Explanation.\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+            @ApiResponse(responseCode = "403", description = "Access Denied.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "User not owner of Character example.", value = "{\"status\": 403, \"message\": \"You need to be the Character's Owner to roll a dice on his Stats.\", \"timestamp\": \"2026-01-15T10:30:00\"}")})),
+            @ApiResponse(responseCode = "401", description = "Wrong Credentials.", content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {@ExampleObject(name = "Wrong Credentials example.", value = "{\"status\": 401, \"message\": \"Wrong Credentials.\", \"timestamp\": \"2026-01-15T10:30:00\"}")}))
+    })
+    @SecurityRequirement(name = "Authorization")
+    @Operation(summary = "Roll a dice on a Stat.", description = "Returns the character's public data and roll result.")
+    @PostMapping("/roll")
+    public CharacterDTO.CharacterRollResponse roll(@Valid @RequestBody CharacterStatDTO.CharacterStatRollRequest request, @RequestHeader String authorization) {
+        return rollService.rollStat(request, authorization);
     }
 }

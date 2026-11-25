@@ -406,20 +406,22 @@ public class RuleService {
      * @param characterStats the list of {@link CharacterStatDTO.CharacterStatSimplified CharacterStats} that hold all the edited and original {@link CharacterStat CharacterStats}.
      * @param character the {@link Character} the {@link CharacterStat CharacterStats} are linked to.
      * @param statIDRolled {@link Integer ID} of the {@link Stat} that was Rolled. {@code null} if it was just a fetch or edit of a character.
+     * @return {@code True} if the rule result was triggered, {@code False} otherwise.
      */
-    private void handleRule(Rule rule, List<CharacterStatDTO.CharacterStatSimplified> characterStats, Character character, @Nullable Integer statIDRolled){
-        if(rule.getOperation() == null || rule.getOperation().isBlank()) return;
-        if(!ruleShouldTrigger(rule, characterStats, statIDRolled, character)) return;
+    private boolean handleRule(Rule rule, List<CharacterStatDTO.CharacterStatSimplified> characterStats, Character character, @Nullable Integer statIDRolled){
+        if(rule.getOperation() == null || rule.getOperation().isBlank()) return false;
+        if(!ruleShouldTrigger(rule, characterStats, statIDRolled, character)) return false;
         ParsedRule parsedRule = parseRule(rule, characterStats, character);
-        if(!parsedRule.condition) return;
+        if(!parsedRule.condition) return false;
         executeResult(parsedRule, characterStats, character);
+        return true;
     }
 
     /**
      * Get a {@link Character} and handle {@link Rule Rules} that could affect its {@link Stat Stats}.
      * @param character {@link Character} that needs to checks if its {@link Stat Stats} are affected.
      * @param statIDRolled {@link Integer ID} of the {@link Stat} that was Rolled. {@code null} if it was just a fetch or edit of a character.
-     * @param checkedRules {@link List<Rule>} If rules were already handled and you don't want them checked again. If no {@link Rule Rules} send an empty List that will be populated with rules checked in this method.
+     * @param checkedRules {@link List<Rule>} If rules were already handled, triggered, and result triggered, and you don't want them checked again. If no {@link Rule Rules} send an empty List that will be populated with rules handled, triggered, and result triggered in this method.
      * @return a {@link List<CharacterStatDTO.CharacterStatResponse> List of CharacterStatResponse} with original value/value that has been definitively edited and the temporarily edited value.
      */
     public List<CharacterStatDTO.CharacterStatResponse> handleRules(Character character, List<Integer> statsNoAuto, @Nullable Integer statIDRolled, @NotNull List<Rule> checkedRules) {
@@ -427,7 +429,7 @@ public class RuleService {
         ArrayList<Rule> rules;
 
         if(campaignToRuleMap.containsKey(campaign.getId())){
-            if(statIDRolled != null){
+            if(statIDRolled == null){
                 rules = campaignToRuleBEFOREOnlyMap.get(campaign.getId());
             } else {
                 rules = campaignToRuleMap.get(campaign.getId());
@@ -464,8 +466,7 @@ public class RuleService {
         //!!!PUT ITEMS STAT EDIT HERE!!!
         //
         for (Rule rule : rules) {
-            handleRule(rule, characterStats, character, statIDRolled);
-            checkedRules.add(rule);
+            if(handleRule(rule, characterStats, character, statIDRolled)) checkedRules.add(rule);
         }
         Map<Integer, CharacterStat> realCharacterStats = character.getCharacterStats().stream().collect(Collectors.toMap(realCharacterStat->realCharacterStat.getId().getStat_id(), Function.identity()));
         Map<Integer, CharacterStat> originalCharacterStats = character.getCharacterStats().stream().collect(Collectors.toMap(originalCharacterStat->originalCharacterStat.getId().getStat_id(), Function.identity()));

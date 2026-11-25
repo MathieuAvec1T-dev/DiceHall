@@ -22,6 +22,10 @@ public class Tag {
     @Column(nullable = false, length = 64)
     private String name;
 
+    @Enumerated(EnumType.STRING)
+    @Column
+    private Type type;
+
     @ManyToMany(mappedBy = "tags")
     private Set<Rule> rules;
 }

@@ -1,5 +1,6 @@
 package dicehall.api.Entities.Campaign;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import dicehall.api.Entities.Rule.Rule;
@@ -40,10 +41,17 @@ public class Stat {
     @Column
     private Integer max;
 
+    @Column
+    private Integer roll;
+
     @JsonSetter(nulls = Nulls.SKIP)
     @Column
     private Boolean auto_toggleable = false;
 
     @ManyToMany(mappedBy = "stats")
     private Set<Rule> rules;
+
+    @JsonIgnore
+    @ManyToMany(mappedBy = "stats")
+    private Set<StatCheckpoint> statCheckpoints;
 }

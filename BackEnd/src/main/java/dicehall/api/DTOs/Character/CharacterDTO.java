@@ -13,12 +13,16 @@ public class CharacterDTO {
         public CharacterResponse(Character character){
             this(character.getFirstname(), character.getLastname(), character.getNickname(), new CampaignDTO.CampaignForCharacterResponse(character.getCampaign()), character.getCharacterStats().stream().map(CharacterStatDTO.CharacterStatResponse::new).toList(), character.getValidate());
         }
+        public CharacterResponse(Character character, List<CharacterStatDTO.CharacterStatResponse> characterStats){
+            this(character.getFirstname(), character.getLastname(), character.getNickname(), new CampaignDTO.CampaignForCharacterResponse(character.getCampaign()), characterStats, character.getValidate());
+        }
     }
     public record CharacterForCampaignResponse(String firstname, String lastname, String nickname, List<CharacterStatDTO.CharacterStatResponse> characterStats, Boolean validate){
         public CharacterForCampaignResponse(Character character){
             this(character.getFirstname(), character.getLastname(), character.getNickname(), character.getCharacterStats().stream().map(CharacterStatDTO.CharacterStatResponse::new).toList(), character.getValidate());
         }
     }
+    public record CharacterRollResponse(int rollResult, String rollName, CharacterResponse character) {}
 
     public record CharacterCreateRequest(@Nullable @Size(max = 64) String firstname, @Nullable @Size(max = 64) String lastname, @Nullable @Size(max = 64) String nickname, @NotNull Integer campaignID, @Nullable Integer userID, @NotNull List<CharacterStatDTO.CharacterStatRequest> characterStats){}
     public record CharacterEditRequest(@NotNull Integer id, @Nullable @Size(max = 64) String firstname, @Nullable @Size(max = 64) String lastName, @Nullable @Size(max = 64) String nickname, @Nullable Integer userID, @NotNull List<CharacterStatDTO.CharacterStatRequest> characterStats){}
