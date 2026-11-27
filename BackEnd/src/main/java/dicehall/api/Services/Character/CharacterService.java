@@ -51,7 +51,7 @@ public class CharacterService {
         User user = userService.validate(authorization);
         Character character = characterRepository.findById(characterID).orElseThrow(()->new ResourceNotFoundException("Character", characterID.toString()));
         if(character.getCampaign().getCampaignUsers().stream().noneMatch(campaignUser -> Objects.equals(campaignUser.getUser().getId(), user.getId()))) throw new IllegalStateException("You are not part of the Campaign of this Character.");
-        return new CharacterDTO.CharacterResponse(character.getFirstname(), character.getLastname(), character.getNickname(), new CampaignDTO.CampaignForCharacterResponse(character.getCampaign()), ruleService.handleRules(character, new ArrayList<>(),null, new ArrayList<>()), character.getValidate());
+        return new CharacterDTO.CharacterResponse(character.getFirstname(), character.getLastname(), character.getNickname(), new CampaignDTO.CampaignForCharacterResponse(character.getCampaign()), ruleService.handleRules(character, new ArrayList<>(),null, null, null, new ArrayList<>()), character.getValidate());
     }
 
     /**
@@ -154,7 +154,7 @@ public class CharacterService {
         character.setCampaign(campaign);
         characterRepository.save(character);
 
-        return new CharacterDTO.CharacterResponse(character.getFirstname(), character.getLastname(), character.getNickname(), new CampaignDTO.CampaignForCharacterResponse(campaign), ruleService.handleRules(character, request.characterStats().stream().filter(stat -> !stat.auto()).map(CharacterStatDTO.CharacterStatRequest::statID).toList(),null, new ArrayList<>()), character.getValidate());
+        return new CharacterDTO.CharacterResponse(character.getFirstname(), character.getLastname(), character.getNickname(), new CampaignDTO.CampaignForCharacterResponse(campaign), ruleService.handleRules(character, request.characterStats().stream().filter(stat -> !stat.auto()).map(CharacterStatDTO.CharacterStatRequest::statID).toList(),null, null, null, new ArrayList<>()), character.getValidate());
     }
 
     /**

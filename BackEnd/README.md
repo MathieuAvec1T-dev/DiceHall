@@ -19,6 +19,7 @@
         - [Value with multiple spaces](#value-with-multiple-spaces)
         - [Percentage of a stat](#percentage-of-a-stat)
         - [Triggered by a roll](#triggered-by-a-roll)
+        - [Roll with a criterion](#roll-with-a-criterion)
         - [Stat existence](#stat-existence)
         - [Chaining conditions](#chaining-conditions)
         - [Multiple chaining conditions](#multiple-chaining-conditions)
@@ -73,13 +74,14 @@ Start with : a `#StatID` to compare or `ALL` or `NONE`
 
 `ALL` and `NONE` are about stats the character possesses unless used with an `EXIST` or `NOTEXIST` comparison then it checks if character has `ALL` or `NONE` of the stats available in campaign.
 
-Operator : `=` `!=` `<` `<=` `>=` `>` `EXIST` `!EXIST` `ROLLED` `PERCENT(#statID,percentage)`
+Operator : `=` `!=` `<` `<=` `>=` `>` `EXIST` `!EXIST` `ROLLED` `ROLLED(comparator,StatCheckpointID)` `PERCENT(#statID,percentage)`
 
 End with : a `#StatID` a number or a String  
 `PERCENT(#statID,percentage)` Gives the percentage asked of the character's stat. (Example: for 50% of max health `PERCENT(#2,50)`).
 
 `!EXIST` can be replaced by `NOTEXIST`.  
-`ROLLED` doesn't need a second value after it. The result will trigger if the stat in the first part was rolled.
+`ROLLED` doesn't need a second value after it. The result will trigger if the stat in the first part was rolled.  
+`ROLLED(comparator,StatCheckpointID)` helps you check if the stat in front of this was rolled and if it corresponds to your criterion. Available comparators: `=` `!=` `<` `<=` `>=` `>`.
 
 Multiple conditions can be chained using AND and OR. No parenthesis.
 
@@ -144,6 +146,20 @@ If Vie is below 50% of Vie max, Force loses 3 points.
 `_ON_ #4 ROLLED : #5 + 1`
 
 When a roll is made on Force, Agilité gains 1 point. `ROLLED` doesn't need a second value.
+
+### Roll with a criterion
+
+`_ON_ #4 ROLLED(<=,5) : #5 + 1`
+
+When a roll is made on Force and it matches the criterion `<=` with the checkpoint `5`, Agilité gains 1 point.
+
+`_ON_ #4 ROLLED(=,3) : #4 - 2`
+
+Same syntax with another comparator. Available comparators: `=` `!=` `<` `<=` `>=` `>`.
+
+`_BEFORE_ #4 ROLLED(>,2) AND #3 = Blessé : #5 - 1`
+
+`ROLLED(...)` can be chained with other conditions using `AND` and `OR`, like any other condition.
 
 ### Stat existence
 

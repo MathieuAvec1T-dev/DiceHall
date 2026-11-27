@@ -4,9 +4,9 @@ import dicehall.api.DTOs.Campaign.StatDTO;
 import dicehall.api.DTOs.Character.CharacterStatDTO;
 import dicehall.api.Entities.Campaign.Campaign;
 import dicehall.api.Entities.Campaign.Stat;
+import dicehall.api.Entities.Campaign.StatCheckpoint;
 import dicehall.api.Entities.Character.Character;
 import dicehall.api.Entities.Character.CharacterStat;
-import dicehall.api.Entities.Character.CharacterStatId;
 import dicehall.api.Entities.Rule.Rule;
 import dicehall.api.Repositories.Campaign.StatRepository;
 import dicehall.api.Security.Exceptions.ResourceNotFoundException;
@@ -135,7 +135,7 @@ public class RuleService {
      * @param character the {@link Character} the {@link CharacterStat CharacterStats} are linked to.
      * @return {@code True} or {@code False} depending on the result of the Comparison.
      */
-    private boolean checkCondition(String condition, List<CharacterStatDTO.CharacterStatSimplified> characterStats, Character character){
+    private boolean checkCondition(String condition, List<CharacterStatDTO.CharacterStatSimplified> characterStats, Character character, String rolledValueType, Integer statIdRolled, Integer rolledValue){
         //Separate each operation for each AND in an array that way if one is fully true it stops searching, if one is false it goes to the next array.
         List<List<String>> operationsOR = Arrays.stream(condition.split("(?=\\bOR\\b)|(?<=\\bOR\\b)"))
                 .filter(operation -> !operation.equals("OR"))
@@ -145,7 +145,7 @@ public class RuleService {
         for (List<String> operations : operationsOR) {
             boolean check = true;
             for (String operation : operations) {
-                if(!checkComparison(operation, characterStats, character)) {
+                if(!checkComparison(operation, characterStats, character, rolledValueType, statIdRolled, rolledValue)) {
                     check = false;
                     break;
                 }
@@ -159,16 +159,66 @@ public class RuleService {
     }
 
     /**
+     * Check the Rolled condition.
+     * @param characterStats the list of {@link CharacterStatDTO.CharacterStatSimplified CharacterStats} that hold all the edited and original {@link CharacterStat CharacterStats}.
+     * @param idOfStat ID of the {@link Stat} that is in the first part of the condition.
+     * @param statIDRolled ID of the {@link Stat} that was rolled.
+     * @param rolledValueType Name of the {@link StatCheckpoint} corresponding to the rolled value.
+     * @param rolledValue The value Rolled.
+     * @param conditionWithParenthesis The condition on the right side of "ROLLED".
+     * @return {@code True} if the condition is True, {@code False} otherwise.
+     */
+    private boolean checkRolled(List<CharacterStatDTO.CharacterStatSimplified> characterStats, String idOfStat, Integer statIDRolled, String rolledValueType, Integer rolledValue, String conditionWithParenthesis) {
+        idOfStat = idOfStat.trim();
+        if(!Common.isInteger(idOfStat)) throw new IllegalStateException("Wrong argument in condition: If you use 'ROLLED' the part in front must be a stat ID.");
+        if(statIDRolled == null) throw new RuntimeException("Error with code: Ro1");
+        if(!Objects.equals(Integer.parseInt(idOfStat), statIDRolled)) return false;
+        if(conditionWithParenthesis == null || conditionWithParenthesis.isBlank()) return true;
+        if(!conditionWithParenthesis.contains("(") || !conditionWithParenthesis.contains(")")) throw new IllegalStateException("Wrong argument in condition: If you use 'ROLLED' the part after must be either a StatCheckpointID OR a comparator a comma and a StatCheckpointID.");
+        if(rolledValueType == null) throw new RuntimeException("Error with code: Ro2");
+        if(rolledValue == null) throw new RuntimeException("Error with code: Ro3");
+        conditionWithParenthesis = conditionWithParenthesis.replace("(","").replace(")","");
+        if(!conditionWithParenthesis.contains(",")) {
+            String finalConditionWithParenthesis = conditionWithParenthesis;
+            Optional<StatCheckpoint> checkpointOpt = statRepository.findById(Integer.parseInt(idOfStat)).orElseThrow(()-> new IllegalStateException("Wrong argument in condition: Need a '#StatID' that exists in campaign or 'ALL' or 'NONE' as the first part of the condition.")).getStatCheckpoints().stream().filter(statCheckpoint-> Objects.equals(statCheckpoint.getId(), Integer.parseInt(finalConditionWithParenthesis))).findFirst();
+            if(checkpointOpt.isEmpty()) return false;
+            StatCheckpoint checkpoint = checkpointOpt.get();
+            return Objects.equals(checkpoint.getName(), rolledValueType);
+        } else {
+            List<String> conditionList = Arrays.stream(conditionWithParenthesis.split(",")).toList();
+            if(conditionList.size() != 2) throw new IllegalStateException("Wrong argument in condition: If you use 'ROLLED' the part after must be either a StatCheckpointID OR a comparator a comma and a StatCheckpointID.");
+            Stat stat = statRepository.findById(Integer.parseInt(idOfStat)).orElseThrow(()-> new IllegalStateException("Wrong argument in condition: Need a '#StatID' that exists in campaign or 'ALL' or 'NONE' as the first part of the condition."));
+            Optional<StatCheckpoint> checkpointOpt = stat.getStatCheckpoints().stream().filter(statCheckpoint-> Objects.equals(statCheckpoint.getId(), Integer.parseInt(conditionList.getLast()))).findFirst();
+            if(checkpointOpt.isEmpty()) return false;
+            StatCheckpoint checkpoint = checkpointOpt.get();
+            int checkpointValue = checkpoint.getValue() == null ? Integer.parseInt(characterStats.stream().filter(characterStat -> characterStat.statID().equals(statIDRolled)).findFirst().orElseThrow(()-> new RuntimeException("Error with code: Ro4")).value().trim()) : checkpoint.getValue();
+            switch (conditionList.getFirst()) {
+                case String s when s.contains("<=") -> {return checkpoint.getName().equals(rolledValueType) || rolledValue <= checkpointValue;}
+                case String s when s.contains("<") -> {return rolledValue < checkpointValue;}
+                case String s when s.contains(">=") -> {return checkpoint.getName().equals(rolledValueType) || rolledValue >= checkpointValue;}
+                case String s when s.contains(">") -> {return rolledValue > checkpointValue;}
+                case String s when s.contains("!=") -> {return !checkpoint.getName().equals(rolledValueType);}
+                case String s when s.contains("=") -> {return checkpoint.getName().equals(rolledValueType);}
+                default -> throw new IllegalStateException("Wrong argument in condition: If you use 'ROLLED' the comparators you can use in the parenthesis are '<,<=,>,>=,='.");
+            }
+        }
+    }
+
+    /**
      * Checks a Comparison of a {@link Rule}.
      * @param operation the {@link Rule#getOperation()}.
      * @param characterStats the list of {@link CharacterStatDTO.CharacterStatSimplified CharacterStats} that hold all the edited and original {@link CharacterStat CharacterStats}.
      * @param character the {@link Character} the {@link CharacterStat CharacterStats} are linked to.
+     * @param rolledValue The value Rolled.
+     * @param statIDRolled ID of the {@link Stat} that was rolled.
+     * @param rolledValueType Name of the {@link StatCheckpoint} corresponding to the rolled value.
      * @return {@code True} or {@code False} depending on the result of the Comparison.
      */
-    private boolean checkComparison(String operation, List<CharacterStatDTO.CharacterStatSimplified> characterStats, Character character) {
+    private boolean checkComparison(String operation, List<CharacterStatDTO.CharacterStatSimplified> characterStats, Character character, @Nullable String rolledValueType, @Nullable Integer statIDRolled, @Nullable Integer rolledValue) {
         boolean condition = false;
         ArrayList<String> splitCondition;
         switch (operation){
+            case String s when s.contains("ROLLED") -> splitCondition = new ArrayList<>(Arrays.asList(s.split("ROLLED")));
             case String s when s.contains("<=") -> splitCondition = new ArrayList<>(Arrays.asList(s.split("<=")));
             case String s when s.contains("<") -> splitCondition = new ArrayList<>(Arrays.asList(s.split("<")));
             case String s when s.contains(">=") -> splitCondition = new ArrayList<>(Arrays.asList(s.split(">=")));
@@ -177,7 +227,6 @@ public class RuleService {
             case String s when s.contains("=") -> splitCondition = new ArrayList<>(Arrays.asList(s.split("=")));
             case String s when s.contains("!EXIST") || s.contains("NOTEXIST") -> splitCondition = new ArrayList<>(Arrays.asList(s.split("!EXIST")));
             case String s when s.contains("EXIST") -> splitCondition = new ArrayList<>(Arrays.asList(s.split("EXIST")));
-            case String s when s.contains("ROLLED") -> splitCondition = new ArrayList<>(Arrays.asList(s.split("ROLLED")));
             default -> throw new IllegalStateException("Wrong argument in condition: Operator can only be '= != < <= > >= EXIST !EXIST ROLLED'.");
         }
         if(!splitCondition.getFirst().contains("#") && !splitCondition.getFirst().contains("ALL") && !splitCondition.getFirst().contains("NONE")) throw new IllegalStateException("Wrong argument in condition: Need a '#StatID' or 'ALL' or 'NONE' as the first part of the condition.");
@@ -187,6 +236,7 @@ public class RuleService {
         for (String value : separatedCondition.getFirst()) {
             Boolean baseCondition = null;
             switch (operation){
+                case String s when s.contains("ROLLED") -> baseCondition = (statIDRolled == null || rolledValueType == null || rolledValue == null) || !checkRolled(characterStats, splitCondition.getFirst().replace("#",""), statIDRolled, rolledValueType, rolledValue, separatedCondition.size() > 1 ? separatedCondition.get(1).getFirst():null);
                 case String s when s.contains("<=") -> {if(Common.isInteger(value) && Common.isInteger(separatedCondition.get(1).getFirst())) baseCondition = Integer.parseInt(value) > Integer.parseInt(separatedCondition.get(1).getFirst());}
                 case String s when s.contains("<") -> {if(Common.isInteger(value) && Common.isInteger(separatedCondition.get(1).getFirst())) baseCondition = Integer.parseInt(value) >= Integer.parseInt(separatedCondition.get(1).getFirst());}
                 case String s when s.contains(">=") -> {if(Common.isInteger(value) && Common.isInteger(separatedCondition.get(1).getFirst())) baseCondition = Integer.parseInt(value) < Integer.parseInt(separatedCondition.get(1).getFirst());}
@@ -195,7 +245,6 @@ public class RuleService {
                 case String s when s.contains("=") -> baseCondition = !Objects.equals(value, separatedCondition.get(1).getFirst());
                 case String s when s.contains("!EXIST") || s.contains("NOTEXIST") -> {if(Common.isInteger(splitCondition.getFirst().trim().replace("#",""))) {baseCondition = character.getCharacterStats().stream().anyMatch(stat -> stat.getId().getStat_id() == Integer.parseInt(splitCondition.getFirst().trim().replace("#","")));}}
                 case String s when s.contains("EXIST") -> {if(Common.isInteger(splitCondition.getFirst().trim().replace("#",""))) {baseCondition = character.getCharacterStats().stream().noneMatch(stat -> stat.getId().getStat_id() == Integer.parseInt(splitCondition.getFirst().trim().replace("#","")));}}
-                case String s when s.contains("ROLLED") -> {return true;}
                 default -> throw new IllegalStateException("Wrong argument in condition: Operator can only be '= != < <= > >= EXIST !EXIST ROLLED'.");
             }
             if(baseCondition != null){
@@ -250,9 +299,12 @@ public class RuleService {
      * @param rule {@link Rule} that is being tested.
      * @param characterStats the list of {@link CharacterStatDTO.CharacterStatSimplified CharacterStats} that hold all the edited and original {@link CharacterStat CharacterStats}.
      * @param character the {@link Character} the {@link CharacterStat CharacterStats} are linked to.
+     * @param rolledValue The value Rolled.
+     * @param statIDRolled ID of the {@link Stat} that was rolled.
+     * @param rolledValueType Name of the {@link StatCheckpoint} corresponding to the rolled value.
      * @return a {@link ParsedRule} containing the Comparison, the Result, if the Result is Definitive and when the {@link Rule} should Trigger.
      */
-    private ParsedRule parseRule(Rule rule, List<CharacterStatDTO.CharacterStatSimplified> characterStats, Character character) {
+    private ParsedRule parseRule(Rule rule, List<CharacterStatDTO.CharacterStatSimplified> characterStats, Character character, String rolledValueType, Integer statIDRolled, Integer rolledValue) {
         boolean definitive = false;
         String operation = rule.getOperation();
         if(operation.contains("_DEF_")) {
@@ -262,7 +314,7 @@ public class RuleService {
 
         List<String> operations = Arrays.stream(operation.split(":")).collect(Collectors.toCollection(ArrayList::new));
         getTrigger(operations);
-        boolean conditionResult = checkCondition(operations.getFirst(), characterStats, character);
+        boolean conditionResult = checkCondition(operations.getFirst(), characterStats, character, rolledValueType, statIDRolled, rolledValue);
         return new ParsedRule(conditionResult, new ArrayList<>(Arrays.stream(operations.get(1).trim().split("(?=[=+\\-*/])|(?<=[=+\\-*/])")).map(String::strip).filter(s -> !s.isEmpty()).toList()), definitive);
     }
 
@@ -406,12 +458,14 @@ public class RuleService {
      * @param characterStats the list of {@link CharacterStatDTO.CharacterStatSimplified CharacterStats} that hold all the edited and original {@link CharacterStat CharacterStats}.
      * @param character the {@link Character} the {@link CharacterStat CharacterStats} are linked to.
      * @param statIDRolled {@link Integer ID} of the {@link Stat} that was Rolled. {@code null} if it was just a fetch or edit of a character.
+     * @param rolledValue The value Rolled.
+     * @param rolledValueType Name of the {@link StatCheckpoint} corresponding to the rolled value.
      * @return {@code True} if the rule result was triggered, {@code False} otherwise.
      */
-    private boolean handleRule(Rule rule, List<CharacterStatDTO.CharacterStatSimplified> characterStats, Character character, @Nullable Integer statIDRolled){
+    private boolean handleRule(Rule rule, List<CharacterStatDTO.CharacterStatSimplified> characterStats, Character character, @Nullable Integer statIDRolled, @Nullable String rolledValueType, @Nullable Integer rolledValue){
         if(rule.getOperation() == null || rule.getOperation().isBlank()) return false;
         if(!ruleShouldTrigger(rule, characterStats, statIDRolled, character)) return false;
-        ParsedRule parsedRule = parseRule(rule, characterStats, character);
+        ParsedRule parsedRule = parseRule(rule, characterStats, character, rolledValueType, statIDRolled, rolledValue);
         if(!parsedRule.condition) return false;
         executeResult(parsedRule, characterStats, character);
         return true;
@@ -421,10 +475,12 @@ public class RuleService {
      * Get a {@link Character} and handle {@link Rule Rules} that could affect its {@link Stat Stats}.
      * @param character {@link Character} that needs to checks if its {@link Stat Stats} are affected.
      * @param statIDRolled {@link Integer ID} of the {@link Stat} that was Rolled. {@code null} if it was just a fetch or edit of a character.
+     * @param rolledValue The value Rolled.
+     * @param rolledValueType Name of the {@link StatCheckpoint} corresponding to the rolled value.
      * @param checkedRules {@link List<Rule>} If rules were already handled, triggered, and result triggered, and you don't want them checked again. If no {@link Rule Rules} send an empty List that will be populated with rules handled, triggered, and result triggered in this method.
      * @return a {@link List<CharacterStatDTO.CharacterStatResponse> List of CharacterStatResponse} with original value/value that has been definitively edited and the temporarily edited value.
      */
-    public List<CharacterStatDTO.CharacterStatResponse> handleRules(Character character, List<Integer> statsNoAuto, @Nullable Integer statIDRolled, @NotNull List<Rule> checkedRules) {
+    public List<CharacterStatDTO.CharacterStatResponse> handleRules(Character character, List<Integer> statsNoAuto, @Nullable Integer statIDRolled, @Nullable String rolledValueType, @Nullable Integer rolledValue, @NotNull List<Rule> checkedRules) {
         Campaign campaign = character.getCampaign();
         ArrayList<Rule> rules;
 
@@ -466,7 +522,7 @@ public class RuleService {
         //!!!PUT ITEMS STAT EDIT HERE!!!
         //
         for (Rule rule : rules) {
-            if(handleRule(rule, characterStats, character, statIDRolled)) checkedRules.add(rule);
+            if(handleRule(rule, characterStats, character, statIDRolled, rolledValueType, rolledValue)) checkedRules.add(rule);
         }
         Map<Integer, CharacterStat> realCharacterStats = character.getCharacterStats().stream().collect(Collectors.toMap(realCharacterStat->realCharacterStat.getId().getStat_id(), Function.identity()));
         Map<Integer, CharacterStat> originalCharacterStats = character.getCharacterStats().stream().collect(Collectors.toMap(originalCharacterStat->originalCharacterStat.getId().getStat_id(), Function.identity()));
@@ -483,45 +539,49 @@ public class RuleService {
         return characterStatsToReturn;
     }
 
-    /**
-     * Test a {@link Rule} by creating a fake {@link Character} with all {@link Stat Stats} and triggering the {@link Rule} with all {@link Stat Stats} as stat rolled and then with no stat roll just a normal fetch.
-     * @param rule {@link Rule} to test.
-     * @param campaign The {@link Campaign} it was originally created from with related {@link Stat Stats}.
-     */
-    public void testNewRule(Rule rule, Campaign campaign) {
-        Rule testedRule = new Rule();
-        testedRule.setOperation(rule.getOperation().replace("_DEF_", ""));
-        testedRule.setStats(rule.getStats());
-        Character character = new Character();
-        character.setCampaign(campaign);
-        Set<CharacterStat> characterStats = new HashSet<>();
-        List<Stat> statsInCampaign = campaign.getRules().stream().flatMap(ruleInMapping -> ruleInMapping.getStats().stream()).distinct().collect(Collectors.toCollection(ArrayList::new));
-        for (Stat stat : statsInCampaign) {
-            String value;
-            if(stat.getSelection() != null && !stat.getSelection().isBlank()) {
-                if(stat.getDefaultValue()!=null) {
-                    value = stat.getDefaultValue();
-                } else {
-                    value = CharacterStatService.parseSelection(stat).getFirst();
-                }
-            } else if(stat.getDefaultValue() != null && !stat.getDefaultValue().isBlank()) {
-                value = stat.getDefaultValue();
-            } else {
-                if(stat.getMin() != null && stat.getMax() != null) {
-                    value = String.valueOf((stat.getMin() + stat.getMax()) / 2);
-                } else {
-                    value = "2";
-                }
-            }
-            characterStats.add(new CharacterStat(new CharacterStatId(1, stat.getId()), character, stat, value));
-        }
-        character.setCharacterStats(characterStats);
-        ArrayList<CharacterStatDTO.CharacterStatSimplified> statsToSend = new ArrayList<>(characterStats.stream().map(stat1 -> new CharacterStatDTO.CharacterStatSimplified(stat1.getId().getStat_id(), stat1.getValue(), stat1.getStat().getAuto_toggleable())).toList());
-        for (Stat stat : statsInCampaign) {
-            if(rule.getStats().stream().anyMatch(ruleStat -> Objects.equals(ruleStat.getId(), stat.getId()))){
-                handleRule(testedRule, statsToSend, character, stat.getId());
-            }
-        }
-        handleRule(testedRule, statsToSend, character, null);
-    }
+    //Put in Commentary while the creation of rules is not made by users.
+//    /**
+//     * Test a {@link Rule} by creating a fake {@link Character} with all {@link Stat Stats} and triggering the {@link Rule} with all {@link Stat Stats} as stat rolled and then with no stat roll just a normal fetch.
+//     * @param rule {@link Rule} to test.
+//     * @param campaign The {@link Campaign} it was originally created from with related {@link Stat Stats}.
+//     */
+//    public void testNewRule(Rule rule, Campaign campaign) {
+//        Rule testedRule = new Rule();
+//        testedRule.setOperation(rule.getOperation().replace("_DEF_", ""));
+//        testedRule.setStats(rule.getStats());
+//        Character character = new Character();
+//        character.setCampaign(campaign);
+//        Set<CharacterStat> characterStats = new HashSet<>();
+//        List<Stat> statsInCampaign = campaign.getRules().stream().flatMap(ruleInMapping -> ruleInMapping.getStats().stream()).distinct().collect(Collectors.toCollection(ArrayList::new));
+//        for (Stat stat : statsInCampaign) {
+//            String value;
+//            if(stat.getSelection() != null && !stat.getSelection().isBlank()) {
+//                if(stat.getDefaultValue()!=null) {
+//                    value = stat.getDefaultValue();
+//                } else {
+//                    value = CharacterStatService.parseSelection(stat).getFirst();
+//                }
+//            } else if(stat.getDefaultValue() != null && !stat.getDefaultValue().isBlank()) {
+//                value = stat.getDefaultValue();
+//            } else {
+//                if(stat.getMin() != null && stat.getMax() != null) {
+//                    value = String.valueOf((stat.getMin() + stat.getMax()) / 2);
+//                } else {
+//                    value = "2";
+//                }
+//            }
+//            characterStats.add(new CharacterStat(new CharacterStatId(1, stat.getId()), character, stat, value));
+//        }
+//        character.setCharacterStats(characterStats);
+//        ArrayList<CharacterStatDTO.CharacterStatSimplified> statsToSend = new ArrayList<>(characterStats.stream().map(stat1 -> new CharacterStatDTO.CharacterStatSimplified(stat1.getId().getStat_id(), stat1.getValue(), stat1.getStat().getAuto_toggleable())).toList());
+//        for (Stat stat : statsInCampaign) {
+//            if(rule.getStats().stream().anyMatch(ruleStat -> Objects.equals(ruleStat.getId(), stat.getId()))){
+//                for (int i = 0; i < stat.getRoll(); i++) {
+//                    handleRule(testedRule, statsToSend, character, stat.getId(), rollService.getRolledValueSuccessName(i,), i);
+//                }
+//
+//            }
+//        }
+//        handleRule(testedRule, statsToSend, character, null, null, null);
+//    }
 }

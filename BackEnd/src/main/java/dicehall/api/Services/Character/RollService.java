@@ -48,14 +48,15 @@ public class RollService {
         if(!Objects.equals(character.getUser().getId(), user.getId())) throw new AccessDeniedException("You need to be the Character's Owner to roll a dice on his Stats.");
         if (character.getCharacterStats().stream().noneMatch(characterStatIn -> Objects.equals(characterStatIn.getId().getStat_id(), request.statID()))) throw new ResourceNotFoundException("CharacterStat", request.statID().toString());
         List<Rule> checkedRules = new ArrayList<>();
-        List<CharacterStatDTO.CharacterStatResponse> characterStats = ruleService.handleRules(character, request.noAutoStatIDs(), null, checkedRules);
+        List<CharacterStatDTO.CharacterStatResponse> characterStats = ruleService.handleRules(character, request.noAutoStatIDs(), null, null, null, checkedRules);
         CharacterStatDTO.CharacterStatResponse characterStat = characterStats.stream().filter(characterStatIn -> Objects.equals(characterStatIn.campaignStat().id(), request.statID())).findFirst().orElseThrow(() -> new ResourceNotFoundException("CharacterStat", request.statID().toString()));
         int roll = ThreadLocalRandom.current().nextInt(1, characterStat.campaignStat().dice() + 1);
         checkedRules.removeIf(rule -> !rule.getOperation().trim().endsWith("_DEF_"));
-        characterStats = ruleService.handleRules(character, request.noAutoStatIDs(), request.statID(), checkedRules);
+        String rolledValueType = getRolledValueSuccessName(roll, characterStatRepository.findById(new CharacterStatId(character.getId(), request.statID())).orElseThrow(()->new RuntimeException("Error with code: R1")), characterStat);
+        characterStats = ruleService.handleRules(character, request.noAutoStatIDs(), request.statID(), rolledValueType, roll, checkedRules);
 
 
-        return new CharacterDTO.CharacterRollResponse(roll, getRolledValueSuccessName(roll, characterStatRepository.findById(new CharacterStatId(character.getId(), request.statID())).orElseThrow(()->new RuntimeException("Error with code: R1")), characterStat), new CharacterDTO.CharacterResponse(character, characterStats));
+        return new CharacterDTO.CharacterRollResponse(roll, rolledValueType, new CharacterDTO.CharacterResponse(character, characterStats));
     }
 
     /**
